@@ -448,3 +448,33 @@ body {
     animation: none;
   }
 }
+
+/* Follow-up questions and place choices under the latest answer */
+.suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-primary);
+  box-shadow: none;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+.suggestion:hover {
+  background: var(--surface-solid);
+  transform: translateY(-1px);
+}
+
+/* The microphone while it listens: a soft pulse */
+.listening {
+  animation: listening 1.4s ease-in-out infinite;
+}
+@keyframes listening {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--mantine-color-red-6) 35%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--mantine-color-red-6) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .listening { animation: none; }
+}

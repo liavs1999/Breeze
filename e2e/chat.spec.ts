@@ -131,3 +131,57 @@ test('on an empty chat, the logo and "+" stay put instead of opening another one
   await expect(page.getByLabel('Message')).toBeFocused();
   expect(chatId(page)).toBe(before);
 });
+
+test('a suggested follow-up under the answer asks the next question', async ({ page }) => {
+  await page.goto('/');
+  await ask(page, 'What will the weather be like in Tokyo this week?');
+  await expect(page.locator('.answer')).toContainText(END);
+  const suggestions = page.getByRole('group', { name: 'Suggested questions' });
+  await suggestions.getByRole('button', { name: 'Hour by hour tomorrow' }).click();
+  await expect(page.locator('.bubble-user').last()).toHaveText(/^Hour by hour tomorrow in Tokyo/);
+  await expect(page.getByRole('img', { name: /hour by hour/i })).toBeVisible();
+});
+
+test('speaking a question fills the input without sending it', async ({ page }) => {
+  // A stand-in for the browser's speech recognizer: it "hears" a question in two parts.
+  await page.addInitScript(() => {
+    class FakeRecognition {
+      onresult: ((e: unknown) => void) | null = null;
+      onend: (() => void) | null = null;
+      onerror = null;
+      start() {
+        setTimeout(() => this.onresult?.({ results: [[{ transcript: 'Will it rain' }]] }), 50);
+        setTimeout(() => (this.onresult?.({ results: [[{ transcript: 'Will it rain in Oslo tomorrow' }]] }), this.onend?.()), 150);
+      }
+      stop() {
+        this.onend?.();
+      }
+      abort() {}
+    }
+    Object.assign(window, { SpeechRecognition: FakeRecognition, webkitSpeechRecognition: FakeRecognition });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Speak your question' }).click();
+  await expect(page.getByLabel('Message')).toHaveValue('Will it rain in Oslo tomorrow');
+  await expect(page.locator('.bubble-user')).toHaveCount(0);
+});
+
+test('a chat opened from someone else’s link is read-only and can be continued as a copy', async ({ page, browser }) => {
+  await page.goto('/');
+  await ask(page, 'What will the weather be like in Oslo this week?');
+  await expect(page.locator('.answer')).toContainText(END);
+  const link = page.url();
+
+  const other = await (await browser.newContext()).newPage();
+  await other.goto(link);
+  await expect(other.locator('.answer')).toContainText(END);
+  await expect(other.getByLabel('Message')).toHaveCount(0);
+  // Not in the other visitor's recent chats.
+  expect(await other.evaluate(() => fetch('/api/chats', { headers: { 'x-atmos-client': localStorage.getItem('atmos:client') ?? '' } }).then((r) => r.json()))).toEqual([]);
+
+  await other.getByRole('button', { name: 'Continue as my chat' }).click();
+  await expect(other.getByLabel('Message')).toBeVisible();
+  expect(other.url()).not.toBe(link);
+  await expect(other.locator('.answer')).toContainText(END);
+  await other.context().close();
+});

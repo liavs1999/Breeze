@@ -1,22 +1,37 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActionIcon, Group, Paper, Text, Textarea, Tooltip } from '@mantine/core';
-import { IconArrowUp, IconPlayerStopFilled } from '@tabler/icons-react';
+import { IconArrowUp, IconMicrophone, IconPlayerStopFilled } from '@tabler/icons-react';
+import { dictationSupported, useDictation } from '../lib/dictation';
 import { read, write } from '../lib/storage';
 
-/** The input. The unsent draft survives a refresh (per chat); Enter sends, Shift+Enter adds a line. */
+/**
+ * The input. The unsent draft survives a refresh (per chat); Enter sends, Shift+Enter adds a line.
+ * The microphone dictates into the input.
+ */
 export function Composer({ chatId, busy, onSend, onStop }: { chatId: string; busy: boolean; onSend: (text: string) => void; onStop: () => void }) {
   const draftKey = `atmos:draft:${chatId}`;
   const [text, setText] = useState(() => read(draftKey) ?? '');
+  const [notice, setNotice] = useState<string | null>(null);
   const ref = useRef<HTMLTextAreaElement>(null);
+  const dictation = useDictation(setText);
 
   useEffect(() => write(draftKey, text || null), [draftKey, text]);
   useEffect(() => ref.current?.focus(), []);
+  useEffect(() => setNotice(dictation.error), [dictation.error]);
 
   const submit = () => {
     const value = text.trim();
     if (!value || busy) return;
+    dictation.stop();
     onSend(value);
     setText('');
+  };
+
+  const toggleDictation = () => {
+    setNotice(null);
+    if (dictation.listening) dictation.stop();
+    else dictation.start(text);
+    ref.current?.focus();
   };
 
   return (
@@ -24,7 +39,7 @@ export function Composer({ chatId, busy, onSend, onStop }: { chatId: string; bus
       <div className="column">
         <div className="composer" data-busy={busy}>
         <Paper className="card" p={6} pl={16} style={{ borderRadius: 28 }}>
-          <Group gap={6} align="flex-end" wrap="nowrap">
+          <Group gap={4} align="flex-end" wrap="nowrap">
             <Textarea
               ref={ref}
               value={text}
@@ -35,7 +50,7 @@ export function Composer({ chatId, busy, onSend, onStop }: { chatId: string; bus
                   submit();
                 }
               }}
-              placeholder="Ask about the weather anywhere…"
+              placeholder={dictation.listening ? 'Listening…' : 'Ask about the weather anywhere…'}
               autosize
               minRows={1}
               maxRows={6}
@@ -45,6 +60,23 @@ export function Composer({ chatId, busy, onSend, onStop }: { chatId: string; bus
               aria-label="Message"
               maxLength={2000}
             />
+            {dictationSupported && (
+              <Tooltip label={dictation.listening ? 'Stop dictating' : 'Speak your question'}>
+                <ActionIcon
+                  size={36}
+                  radius="xl"
+                  variant={dictation.listening ? 'light' : 'subtle'}
+                  color={dictation.listening ? 'red' : 'gray'}
+                  className={dictation.listening ? 'listening' : undefined}
+                  onClick={toggleDictation}
+                  disabled={busy}
+                  aria-label={dictation.listening ? 'Stop dictating' : 'Speak your question'}
+                  aria-pressed={dictation.listening}
+                >
+                  <IconMicrophone size={19} stroke={1.8} />
+                </ActionIcon>
+              </Tooltip>
+            )}
             {busy ? (
               <Tooltip label="Stop">
                 <ActionIcon size={36} radius="xl" variant="filled" className="radar-stop" onClick={onStop} aria-label="Stop the answer">
@@ -59,12 +91,16 @@ export function Composer({ chatId, busy, onSend, onStop }: { chatId: string; bus
           </Group>
         </Paper>
         </div>
-        <Text size="xs" c="dimmed" ta="center" mt={6}>
-          Weather data by{' '}
-          <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
-            Open-Meteo
-          </a>{' '}
-          (CC BY 4.0). Answers can be wrong; check official warnings for safety decisions.
+        <Text size="xs" c="dimmed" ta="center" mt={6} role="status" aria-live="polite">
+          {notice ?? (
+            <>
+              Weather data by{' '}
+              <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
+                Open-Meteo
+              </a>{' '}
+              (CC BY 4.0). Answers can be wrong; check official warnings for safety decisions.
+            </>
+          )}
         </Text>
       </div>
     </div>

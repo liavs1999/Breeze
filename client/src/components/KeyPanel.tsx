@@ -1,17 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Alert, Anchor, Autocomplete, Button, Checkbox, Divider, Group, Modal, PasswordInput, Select, Stack, Text } from '@mantine/core';
+import { Alert, Anchor, Autocomplete, Button, Checkbox, Group, Modal, PasswordInput, Select, Stack, Text } from '@mantine/core';
 import { IconAlertTriangle, IconCircleCheck, IconInfoCircle, IconKey } from '@tabler/icons-react';
-import { FAULTS, PROVIDER_INFO, PROVIDERS, type Fault, type KeyCheckResult, type ProviderId } from '@wwa/shared';
+import { PROVIDER_INFO, PROVIDERS, type KeyCheckResult, type ProviderId } from '@wwa/shared';
 import { api, ApiError } from '../lib/api';
 import { clearKey, maskKey, saveKey, updateSettings, useSettings } from '../lib/settings';
 import { setKeyResult, useAppStatus } from '../lib/status';
-
-const FAULT_LABELS: Record<Fault, string> = {
-  weather_error: 'Weather API fails',
-  weather_slow: 'Weather API is slow (+4 s)',
-  llm_slow: 'Model is slow (+3 s per step)',
-  drop_stream: 'Connection drops mid-answer',
-};
 
 /**
  * "Model & key": pick a provider, paste a key, check it with one tiny request. The key stays in this
@@ -151,25 +144,6 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
             Your key stays in this browser. It is sent to this app's server with each question, used for that answer, and never stored or logged.
           </Text>
         </Alert>
-
-        {health?.faultsEnabled && (
-          <>
-            <Divider label="Simulate failures (development)" labelPosition="left" />
-            <Stack gap={6}>
-              {FAULTS.map((f) => (
-                <Checkbox
-                  key={f}
-                  size="xs"
-                  label={FAULT_LABELS[f]}
-                  checked={settings.faults.includes(f)}
-                  onChange={(e) =>
-                    updateSettings({ faults: e.currentTarget.checked ? [...settings.faults, f] : settings.faults.filter((x) => x !== f) })
-                  }
-                />
-              ))}
-            </Stack>
-          </>
-        )}
       </Stack>
     </Modal>
   );

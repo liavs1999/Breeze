@@ -27,40 +27,49 @@ db.exec(`
     expires_at INTEGER NOT NULL
   );
 `);
+// Added later: the browser that started the chat (see CLIENT_HEADER). Older rows have none.
+if (!(db.prepare('PRAGMA table_info(chats)').all() as { name: string }[]).some((c) => c.name === 'owner')) {
+  db.exec('ALTER TABLE chats ADD COLUMN owner TEXT');
+}
+db.exec('CREATE INDEX IF NOT EXISTS chats_by_owner ON chats (owner, updated_at)');
 
 export interface ChatRecord {
   id: string;
   title: string;
   messages: UIMessage[];
   updatedAt: string;
+  owner: string | null;
 }
 
-const getChatStmt = db.prepare('SELECT id, title, messages, updated_at FROM chats WHERE id = ?');
+const getChatStmt = db.prepare('SELECT id, title, messages, updated_at, owner FROM chats WHERE id = ?');
+// The owner is set when the chat is first saved and never changes afterwards.
 const upsertChatStmt = db.prepare(`
-  INSERT INTO chats (id, title, messages, created_at, updated_at) VALUES (?, ?, ?, ?, ?)
+  INSERT INTO chats (id, title, messages, created_at, updated_at, owner) VALUES (?, ?, ?, ?, ?, ?)
   ON CONFLICT(id) DO UPDATE SET title = excluded.title, messages = excluded.messages, updated_at = excluded.updated_at
 `);
 
 export function getChat(id: string): ChatRecord | null {
-  const row = getChatStmt.get(id) as { id: string; title: string; messages: string; updated_at: string } | undefined;
+  const row = getChatStmt.get(id) as { id: string; title: string; messages: string; updated_at: string; owner: string | null } | undefined;
   if (!row) return null;
-  return { id: row.id, title: row.title, messages: JSON.parse(row.messages), updatedAt: row.updated_at };
+  return { id: row.id, title: row.title, messages: JSON.parse(row.messages), updatedAt: row.updated_at, owner: row.owner };
 }
 
-export function saveChat(id: string, messages: UIMessage[]): void {
+/** Saves the messages; `owner` is recorded only when the chat is new. */
+export function saveChat(id: string, messages: UIMessage[], owner: string | null = null): void {
   const now = new Date().toISOString();
-  upsertChatStmt.run(id, titleOf(messages), JSON.stringify(messages), now, now);
+  upsertChatStmt.run(id, titleOf(messages), JSON.stringify(messages), now, now, owner);
 }
 
-export function listChats(limit = 20): ChatSummary[] {
+export function listChats(owner: string, limit = 20): ChatSummary[] {
   const rows = db
-    .prepare('SELECT id, title, updated_at FROM chats ORDER BY updated_at DESC LIMIT ?')
-    .all(limit) as { id: string; title: string; updated_at: string }[];
+    .prepare('SELECT id, title, updated_at FROM chats WHERE owner = ? ORDER BY updated_at DESC LIMIT ?')
+    .all(owner, limit) as { id: string; title: string; updated_at: string }[];
   return rows.map((r) => ({ id: r.id, title: r.title, updatedAt: r.updated_at }));
 }
 
-export function deleteChat(id: string): void {
-  db.prepare('DELETE FROM chats WHERE id = ?').run(id);
+/** Deletes the chat if it belongs to `owner`; returns whether it did. */
+export function deleteChat(id: string, owner: string): boolean {
+  return Number(db.prepare('DELETE FROM chats WHERE id = ? AND owner = ?').run(id, owner).changes) > 0;
 }
 
 function titleOf(messages: UIMessage[]): string {

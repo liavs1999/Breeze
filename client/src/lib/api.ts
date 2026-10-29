@@ -1,4 +1,5 @@
-import type { ChatSummary, Health, KeyCheckRequest, KeyCheckResult } from '@wwa/shared';
+import { CLIENT_HEADER, type ChatSummary, type Health, type KeyCheckRequest, type KeyCheckResult } from '@wwa/shared';
+import { clientId } from './storage';
 import type { ChatMessage } from './types';
 
 export class ApiError extends Error {
@@ -14,7 +15,8 @@ export class ApiError extends Error {
 async function request<T>(path: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(path, { ...init, signal: init?.signal ?? AbortSignal.timeout(init?.timeoutMs ?? 15_000) });
+    const headers = { [CLIENT_HEADER]: clientId(), ...(init?.headers as Record<string, string> | undefined) };
+    res = await fetch(path, { ...init, headers, signal: init?.signal ?? AbortSignal.timeout(init?.timeoutMs ?? 15_000) });
   } catch {
     throw new ApiError('Cannot reach the server.', 'network', 0);
   }
@@ -44,6 +46,8 @@ export interface LoadedChat {
   title: string;
   messages: ChatMessage[];
   streaming: boolean;
+  /** Someone else's chat, opened by its link: it can be read and copied, not continued. */
+  readOnly: boolean;
 }
 
 export const api = {
@@ -52,6 +56,12 @@ export const api = {
   chats: () => request<ChatSummary[]>('/api/chats'),
   deleteChat: (id: string) => request<void>(`/api/chats/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   stop: (id: string) => request<void>(`/api/chats/${encodeURIComponent(id)}/stop`, { method: 'POST' }),
+  copyChat: (id: string, to: string) =>
+    request<{ id: string }>(`/api/chats/${encodeURIComponent(id)}/copy`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ to }),
+    }),
   checkKey: (body: KeyCheckRequest) =>
     request<KeyCheckResult>('/api/keys/check', {
       method: 'POST',

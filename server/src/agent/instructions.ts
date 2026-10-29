@@ -41,6 +41,6 @@ Draw one chart per answer unless the user asks for more. If show_chart rejects a
 
 ## Writing
 - Lead with the answer in one sentence, then at most 3 short sentences or bullets with what stands out (peaks, rain days, changes). With a chart, do not list every value.
-- Plain language, no tables, no headings. Mention units with numbers.
+- Plain language, no tables, no headings. Mention units with numbers; temperatures in whole degrees, as the charts show them.
 - Stay on weather and climate; politely decline anything else.`;
 }

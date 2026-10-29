@@ -67,7 +67,13 @@ the provider is rate-limited (a model that reports a spent quota is skipped unti
 
 **Look and feel.** System font, frosted cards, and a sky that follows the weather: the top of the page and the
 "now" card take the gradient of the current conditions and time of day at the place being discussed. Temperature
-colors are on a fixed scale, so a color always means the same temperature. The input glows while the agent works.
+colors are on a fixed scale, so a color always means the same temperature. A radar sweep circles the input while the
+agent works.
+
+**In the chat.** Under each answer, two or three follow-up questions about the same place, built from the answer
+itself (no extra model call). When a place name is ambiguous ("Springfield"), the places the agent found become
+buttons. The microphone dictates a question with the browser's own speech recognition (Chrome, Edge, Safari; Chrome
+sends the audio to Google to transcribe it); the words land in the input and nothing is sent until you press send.
 
 **Streaming and resilience.**
 
@@ -78,14 +84,17 @@ colors are on a fixed scale, so a color always means the same temperature. The i
 - **Weather API down:** retries with backoff, then cached data (marked as such), else a clear answer.
 - **No flash on refresh:** color scheme applied before the first paint; draft and scroll position restored.
 
-See it live: **Model & key → Simulate failures** (weather API errors, slow model, dropped connection).
+The browser tests show each of these with injected failures (weather API errors, a slow model, a dropped
+connection); the injection is off in production.
 
 ## Tests
 
 ```bash
-npm test          # unit: chart rules, stream replay, weather client retries and cached fallback
+npm test          # unit: chart rules, stream replay, weather client retries and cached fallback, place hints,
+                  # chat ownership
 npm run e2e       # browser (Playwright, installed Chrome): reload mid-answer, dropped connection, API failure,
-                  # stop, offline, draft, key check — with a scripted model, no key needed
+                  # stop, offline, draft, key check, follow-ups, dictation, shared chats — with a scripted model,
+                  # no key needed
 npm run evals     # the real model on 17 cases: chart decision and kind, tools, every number grounded in data
 ```
 
@@ -106,4 +115,6 @@ e2e/      Playwright tests          PLAN.md   plan and decisions
 - Free Gemini keys allow only about 20 requests a day on the Flash models; the app then falls back to Flash-Lite
   (marked "backup model" under the answer). A Groq key (free) or a paid key avoids this.
 - Your key stays in your browser; it is sent with each question in a header and never stored or logged.
+- Each browser keeps an anonymous id and sees (and can delete) only its own chats. A chat's link opens for anyone,
+  read-only; "Continue as my chat" makes them their own copy.
 - One server instance: the resumable-stream buffer is in memory (with several instances it would move to Redis).

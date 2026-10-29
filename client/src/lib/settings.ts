@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import { FAULT_HEADER, KEY_HEADERS, type Fault, type ProviderId, type UnitSystem } from '@wwa/shared';
-import { read, readJson, write } from './storage';
+import { CLIENT_HEADER, FAULT_HEADER, KEY_HEADERS, type Fault, type ProviderId, type UnitSystem } from '@wwa/shared';
+import { clientId, read, readJson, write } from './storage';
 
 /**
  * App settings, shared by every component. The API key is kept only in this browser: in local
@@ -64,10 +64,10 @@ export function useSettings() {
 
 export const getSettings = () => snapshot;
 
-/** Request headers for the chat: the user's key (if any) and the simulated faults. */
+/** Request headers for the chat: this browser's id, the user's key (if any) and the simulated faults. */
 export function requestHeaders(): Record<string, string> {
   const { settings: s, apiKey: key } = snapshot;
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { [CLIENT_HEADER]: clientId() };
   if (key) {
     headers[KEY_HEADERS.provider] = s.provider;
     headers[KEY_HEADERS.key] = key;

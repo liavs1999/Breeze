@@ -56,14 +56,18 @@ export async function searchPlaces(query: string, count = 5): Promise<Place[]> {
 
   const [name, ...hintParts] = query.split(',').map((s) => s.trim()).filter(Boolean);
   if (!name) return [];
-  const hint = hintParts.join(' ').toLowerCase();
-  const url = `${GEOCODING}?name=${encodeURIComponent(name)}&count=${hint ? 20 : count}&language=en&format=json`;
+  const hints = hintParts.map((h) => h.toLowerCase());
+  const url = `${GEOCODING}?name=${encodeURIComponent(name)}&count=${hints.length ? 20 : count}&language=en&format=json`;
   const data = await fetchJson<{ results?: GeoResult[] }>(url, 30 * DAY);
   let results = data.results ?? [];
-  if (hint) {
-    const matches = results.filter((r) =>
-      [r.country, r.country_code, r.admin1].some((v) => v && (v.toLowerCase().includes(hint) || hint.includes(v.toLowerCase()))),
-    );
+  if (hints.length) {
+    // Every hint must fit ("Springfield, Ohio, United States": the region and the country), so a
+    // shared country alone does not pick the first of several. Two-letter hints are country codes
+    // and match exactly ("US" is not part of "Russia").
+    const fits = (r: GeoResult, h: string) =>
+      r.country_code?.toLowerCase() === h ||
+      [r.country, r.admin1].some((v) => v && (v.toLowerCase() === h || (h.length > 2 && (v.toLowerCase().includes(h) || h.includes(v.toLowerCase())))));
+    const matches = results.filter((r) => hints.every((h) => fits(r, h)));
     if (matches.length) results = matches;
   }
   return results.slice(0, count).map(toPlace);

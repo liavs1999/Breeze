@@ -4,11 +4,13 @@ import {
   aqiLabel,
   CHART_KINDS,
   COMPARE_METRICS,
+  convert,
   describeWeatherCode,
   formatValue,
   type ChartSpec,
   type CurrentWeather,
   type Quantity,
+  unitSymbol,
 } from '@wwa/shared';
 import { currentContext } from '../context';
 import { saveDataset } from '../weather/datasets';
@@ -30,7 +32,12 @@ export class ToolError extends Error {}
 
 const place = z.string().min(1).describe('Place name as the user wrote it, optionally with region or country ("Paris, Texas"), or "lat,lon".');
 
-const fmt = (v: number | null | undefined, q: Quantity) => formatValue(v, q, currentContext().units);
+/** Values as the model reads them, in the user's units; temperatures in whole degrees, as the charts show them. */
+function fmt(v: number | null | undefined, q: Quantity): string {
+  const { units } = currentContext();
+  if (q === 'temperature' && v != null) return `${Math.round(convert(v, 'temperature', units))}${unitSymbol('temperature', units)}`;
+  return formatValue(v, q, units);
+}
 
 async function locate(query: string) {
   try {

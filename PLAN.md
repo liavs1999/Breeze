@@ -199,3 +199,27 @@ draft, key check), evals 17/17 with `gemini-3.6-flash` and 5/5 chart cases with 
 - **The "now" card is a sky card**: its gradient follows the condition and day or night; the next 12 hours below.
 - **The page follows the sky** of the place being discussed (a soft tint at the top), frosted cards and header,
   blue user bubbles, a capsule input that glows while the agent works, shimmering "Thinking…".
+
+## Test pass and easy wins (29 Oct, night)
+
+Found by using the app as a visitor would:
+
+- **Every visitor saw everyone's chats**, and any visitor could delete any chat. Now each browser keeps an
+  anonymous id (a header on every request); chats are listed, stopped, continued and deleted only by the browser
+  that started them. A link still opens for anyone, read-only, with "Continue as my chat" to make a copy.
+- **"Springfield, Ohio, United States" resolved to Missouri**: the place hints were matched as one phrase, so the
+  shared country matched every Springfield. Each hint must now fit, and two-letter hints are country codes ("US" is
+  not part of "Russia").
+- **Model fallback within one answer**: the list of models to skip was read once per answer, so each later step
+  tried the spent models again. It is now read before every call.
+- **Whole degrees in the text**, as on the charts (the model was writing 26.5° next to a chart showing 27°).
+
+Added: follow-up questions under the latest answer and the found places as buttons when a name is ambiguous (both
+read from the answer, no extra model call), dictation with the browser's speech recognition, and the chat's first
+question as the tab title. Tried and removed: a "weather where I am" button; the "Simulate failures" panel (the
+browser tests still inject failures; the injection is off in production).
+
+Seen but left: a written answer stays in the units it was written in when °C/°F is switched (charts convert);
+Hebrew text is laid out left to right; the agent does not answer sunrise and sunset (the data is fetched for the
+now card's request but not passed on); beyond 16 days the agent says no forecast exists instead of describing a
+typical year.

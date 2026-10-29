@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
+import { DefaultChatTransport, generateId } from 'ai';
 import { Alert, Button, Group, Loader, Skeleton, Stack, Text } from '@mantine/core';
 import { useDocumentVisibility, useNetwork } from '@mantine/hooks';
-import { IconAlertTriangle, IconKey, IconRefresh, IconWifiOff } from '@tabler/icons-react';
+import { IconAlertTriangle, IconCopy, IconKey, IconRefresh, IconWifiOff } from '@tabler/icons-react';
 import { api, KEY_ERRORS, parseChatError, withRetry, type LoadedChat } from '../lib/api';
 import { getSettings, requestHeaders } from '../lib/settings';
 import { checkSavedKey, markKeyProblem } from '../lib/status';
@@ -14,6 +15,7 @@ import { skyFromMessages } from '../lib/sky';
 import { Composer } from './Composer';
 import { EmptyState } from './EmptyState';
 import { MessageView } from './MessageView';
+import { Suggestions } from './Suggestions';
 
 /** Loads the saved conversation first (so a refresh shows it instantly), then mounts the live chat. */
 export function ChatPage({ chatId, onOpenKeyPanel }: { chatId: string; onOpenKeyPanel: () => void }) {
@@ -117,6 +119,8 @@ function Conversation({ chatId, initial, onOpenKeyPanel }: { chatId: string; ini
   };
 
   useScrollMemory(chatId, messages.length);
+  useTabTitle(messages);
+  const readOnly = initial.readOnly;
 
   return (
     <>
@@ -139,14 +143,53 @@ function Conversation({ chatId, initial, onOpenKeyPanel }: { chatId: string; ini
             {chatError?.code === 'network' && !reconnecting && (
               <ErrorNotice code="network" message="The connection was interrupted." onRetry={() => (clearError(), void regenerate())} onOpenKeyPanel={onOpenKeyPanel} />
             )}
-            {interrupted && (
+            {interrupted && !readOnly && (
               <ErrorNotice code="interrupted" message="This answer was interrupted." onRetry={() => void regenerate()} onOpenKeyPanel={onOpenKeyPanel} />
             )}
+            {!busy && !chatError && !reconnecting && !readOnly && <Suggestions message={lastMessage} onPick={send} />}
           </Stack>
         )}
       </main>
-      <Composer chatId={chatId} busy={busy} onSend={send} onStop={handleStop} />
+      {readOnly ? <SharedChatBar chatId={chatId} /> : <Composer chatId={chatId} busy={busy} onSend={send} onStop={handleStop} />}
     </>
+  );
+}
+
+/** The browser tab names the chat (its first question), so several open chats can be told apart. */
+function useTabTitle(messages: ChatMessage[]) {
+  const first = messages.find((m) => m.role === 'user')?.parts.find((p) => p.type === 'text')?.text.trim();
+  useEffect(() => {
+    document.title = first ? `${first.length > 50 ? `${first.slice(0, 48)}…` : first} · Atmos` : 'Atmos · weather chat';
+    return () => {
+      document.title = 'Atmos · weather chat';
+    };
+  }, [first]);
+}
+
+/** In place of the input on someone else's chat: it can be read, or copied to continue it. */
+function SharedChatBar({ chatId }: { chatId: string }) {
+  const navigate = useNavigate();
+  const [state, setState] = useState<'idle' | 'copying' | 'failed'>('idle');
+  const copy = () => {
+    setState('copying');
+    api
+      .copyChat(chatId, generateId())
+      .then(({ id }) => navigate(`/c/${id}`))
+      .catch(() => setState('failed'));
+  };
+  return (
+    <div style={{ position: 'sticky', bottom: 0, paddingBottom: 'max(12px, env(safe-area-inset-bottom))', paddingTop: 18, background: 'linear-gradient(to top, var(--mantine-color-body) 55%, transparent)' }}>
+      <div className="column">
+        <Group className="card" justify="space-between" gap="sm" p={10} pl={18} style={{ borderRadius: 28 }}>
+          <Text size="sm" c="dimmed">
+            {state === 'failed' ? 'The copy could not be made. Try again.' : 'A chat shared with you. It is read-only.'}
+          </Text>
+          <Button size="sm" radius="xl" leftSection={<IconCopy size={15} />} loading={state === 'copying'} onClick={copy}>
+            Continue as my chat
+          </Button>
+        </Group>
+      </div>
+    </div>
   );
 }
 

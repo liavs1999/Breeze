@@ -85,31 +85,37 @@ export function modelFor(choice: ModelChoice, onModel: (modelId: string) => void
     return wrapLanguageModel({ model: scriptedModel(), middleware: slowFault });
   }
   const all = [choice.model, ...(FALLBACK_MODELS[choice.provider] ?? []).filter((m) => m !== choice.model)];
-  const now = Date.now();
-  const available = all.filter((m) => (blockedUntil.get(blockKey(choice, m)) ?? 0) <= now);
-  const candidates = available.length ? available : all;
-  const models = candidates.map((m) => baseModel(choice.provider, choice.key, m) as Exclude<LanguageModel, string>);
+  const models = all.map((m) => baseModel(choice.provider, choice.key, m) as Exclude<LanguageModel, string>);
+  // Checked before every call, so a model that ran out during this answer is skipped for its later steps too.
+  const usable = () => {
+    const now = Date.now();
+    const open = all.map((_, i) => i).filter((i) => (blockedUntil.get(blockKey(choice, all[i])) ?? 0) <= now);
+    return open.length ? open : all.map((_, i) => i);
+  };
   return wrapLanguageModel({
     model: models[0] as any,
-    modelId: candidates[0],
+    modelId: all[0],
     middleware: {
       specificationVersion: 'v4',
       wrapStream: async ({ doStream, params }) => {
         if (currentContext().faults.has('llm_slow')) await sleep(3000, params.abortSignal);
+        const order = usable();
+        const candidates = order.map((i) => all[i]);
         let lastError: unknown;
-        for (let i = 0; i < models.length; i++) {
+        for (let k = 0; k < order.length; k++) {
+          const i = order[k];
           try {
             const result = i === 0 ? await doStream() : await (models[i] as any).doStream(params);
-            onModel(candidates[i]);
+            onModel(all[i]);
             return result;
           } catch (error) {
             lastError = error;
             if (!isRetryable(error) || params.abortSignal?.aborted) throw error;
             const delay = retryDelayMs(error);
-            blockedUntil.set(blockKey(choice, candidates[i]), Date.now() + delay);
+            blockedUntil.set(blockKey(choice, all[i]), Date.now() + delay);
             log('model.fallback', {
-              from: candidates[i],
-              to: candidates[i + 1] ?? null,
+              from: all[i],
+              to: candidates[k + 1] ?? null,
               status: APICallError.isInstance(error) ? error.statusCode : undefined,
               skipForS: Math.round(delay / 1000),
             });

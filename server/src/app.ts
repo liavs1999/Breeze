@@ -4,7 +4,7 @@ import { Hono, type Context } from 'hono';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { UI_MESSAGE_STREAM_HEADERS } from 'ai';
 import { z } from 'zod';
-import { FAULT_HEADER, FAULTS, keyCheckRequest, type Fault, type Health } from '@wwa/shared';
+import { CLIENT_HEADER, clientIdSchema, FAULT_HEADER, FAULTS, keyCheckRequest, type Fault, type Health } from '@wwa/shared';
 import { config } from './config';
 import { deleteChat, getChat, listChats, saveChat } from './db';
 import { log } from './log';
@@ -29,6 +29,10 @@ const keyCheckLimiter = createLimiter(12, 60_000);
 
 const visitor = (c: Context) =>
   c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || (c.env as any)?.incoming?.socket?.remoteAddress || 'local';
+
+/** The browser's anonymous id (CLIENT_HEADER), or null when missing or malformed. */
+const clientOf = (c: Context) => clientIdSchema.safeParse(c.req.header(CLIENT_HEADER)).data ?? null;
+const notOwner = { error: 'not_owner', message: 'This chat was shared with you, so it is read-only. Continue it as your own copy to ask more.' };
 
 function faultsOf(c: Context): Set<Fault> {
   if (!config.allowFaults) return new Set();
@@ -56,8 +60,13 @@ app.post('/api/keys/check', async (c) => {
   return c.json(result);
 });
 
-app.get('/api/chats', (c) => c.json(listChats()));
+/** This browser's chats only. */
+app.get('/api/chats', (c) => {
+  const client = clientOf(c);
+  return c.json(client ? listChats(client) : []);
+});
 
+/** Any chat opens by its link (ids are random and unguessable); only its owner can continue it. */
 app.get('/api/chats/:id', (c) => {
   const id = chatId.safeParse(c.req.param('id'));
   if (!id.success) return c.json({ error: 'Invalid chat id' }, 400);
@@ -67,15 +76,31 @@ app.get('/api/chats/:id', (c) => {
     title: chat?.title ?? 'New chat',
     messages: chat?.messages ?? [],
     streaming: Boolean(activeRun(id.data)),
+    readOnly: Boolean(chat && chat.owner !== clientOf(c)),
   });
 });
 
 app.delete('/api/chats/:id', (c) => {
   const id = chatId.safeParse(c.req.param('id'));
-  if (!id.success) return c.json({ error: 'Invalid chat id' }, 400);
+  const client = clientOf(c);
+  if (!id.success || !client) return c.json({ error: 'Invalid request' }, 400);
+  if (getChat(id.data)?.owner !== client) return c.json(notOwner, 403);
   activeRun(id.data)?.abort.abort();
-  deleteChat(id.data);
+  deleteChat(id.data, client);
   return c.body(null, 204);
+});
+
+/** Copies a chat someone shared into a new chat of this browser's own, to continue it. */
+app.post('/api/chats/:id/copy', async (c) => {
+  const id = chatId.safeParse(c.req.param('id'));
+  const to = chatId.safeParse((await c.req.json().catch(() => null))?.to);
+  const client = clientOf(c);
+  if (!id.success || !to.success || !client) return c.json({ error: 'Invalid request' }, 400);
+  const chat = getChat(id.data);
+  if (!chat) return c.json({ error: 'not_found', message: 'This chat no longer exists.' }, 404);
+  if (getChat(to.data)) return c.json({ error: 'invalid_request', message: 'That chat id is taken.' }, 409);
+  saveChat(to.data, chat.messages, client);
+  return c.json({ id: to.data });
 });
 
 /** Starts an answer and streams it. The answer keeps running if this connection drops. */
@@ -83,12 +108,16 @@ app.post('/api/chat', async (c) => {
   const parsed = chatRequest.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'invalid_request', message: 'Invalid chat request.' }, 400);
   const { id, message, trigger, units, timezone } = parsed.data;
+  const client = clientOf(c);
+  if (!client) return c.json({ error: 'invalid_request', message: 'Reload the page and try again.' }, 400);
 
   const text = message.parts.filter((p: any) => p?.type === 'text').map((p: any) => String(p.text ?? '')).join('');
   if (trigger === 'submit-message' && !text.trim()) return c.json({ error: 'invalid_request', message: 'The message is empty.' }, 400);
   if (text.length > MAX_MESSAGE_CHARS) {
     return c.json({ error: 'too_long', message: `Messages are limited to ${MAX_MESSAGE_CHARS} characters.` }, 413);
   }
+  const chat = getChat(id);
+  if (chat && chat.owner !== client) return c.json(notOwner, 403);
   if (activeRun(id)) return c.json({ error: 'busy', message: 'An answer is already being written in this chat.' }, 409);
 
   const choice = chooseModel(c.req.raw.headers);
@@ -104,7 +133,7 @@ app.post('/api/chat', async (c) => {
   }
 
   // Build the conversation from storage: the client sends only its newest message.
-  const stored = (getChat(id)?.messages ?? []) as ChatMessage[];
+  const stored = (chat?.messages ?? []) as ChatMessage[];
   let messages: ChatMessage[];
   if (trigger === 'regenerate-message') {
     const lastUser = stored.map((m) => m.role).lastIndexOf('user');
@@ -118,7 +147,7 @@ app.post('/api/chat', async (c) => {
   if (!messages.length || messages[messages.length - 1].role !== 'user') {
     return c.json({ error: 'invalid_request', message: 'Nothing to answer.' }, 400);
   }
-  saveChat(id, messages);
+  saveChat(id, messages, client);
 
   try {
     const run = await startAnswer({ chatId: id, messages, choice, units, userTimezone: timezone, faults: faultsOf(c) });
@@ -144,6 +173,7 @@ app.get('/api/chat/:id/stream', (c) => {
 app.post('/api/chats/:id/stop', (c) => {
   const id = chatId.safeParse(c.req.param('id'));
   if (!id.success) return c.body(null, 400);
+  if (getChat(id.data)?.owner !== clientOf(c)) return c.json(notOwner, 403);
   activeRun(id.data)?.abort.abort();
   return c.body(null, 204);
 });
