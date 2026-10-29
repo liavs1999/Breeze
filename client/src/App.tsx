@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, Route, Routes, useParams } from 'react-router';
 import { generateId } from 'ai';
 import { Header } from './components/Header';
@@ -20,13 +20,22 @@ export function App() {
     <div className="app">
       <Header onOpenKeyPanel={() => setKeyPanelOpen(true)} />
       <Routes>
-        <Route path="/" element={<Navigate to={`/c/${generateId()}`} replace />} />
+        <Route path="/" element={<NewChat />} />
         <Route path="/c/:id" element={<ChatRoute onOpenKeyPanel={() => setKeyPanelOpen(true)} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <KeyPanel opened={keyPanelOpen} onClose={() => setKeyPanelOpen(false)} />
     </div>
   );
+}
+
+/**
+ * Home: a fresh, empty chat. The id is made when this route mounts, so every visit (logo, "New chat")
+ * gets a new one; an id made once in App's render would send later visits back to an old chat.
+ */
+function NewChat() {
+  const id = useMemo(() => generateId(), []);
+  return <Navigate to={`/c/${id}`} replace />;
 }
 
 function ChatRoute({ onOpenKeyPanel }: { onOpenKeyPanel: () => void }) {

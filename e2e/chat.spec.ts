@@ -98,3 +98,15 @@ test('the key panel checks a key and explains a rejected one', async ({ page }) 
   await page.getByRole('button', { name: 'Check and save' }).click();
   await expect(page.getByText(/Key problem|rejected/i).first()).toBeVisible();
 });
+
+test('the logo always opens a fresh home page, even after chatting', async ({ page }) => {
+  for (let i = 0; i < 2; i++) {
+    await page.goto(i === 0 ? '/' : page.url());
+    const before = chatId(page);
+    await ask(page, 'What will the weather be like in Rome this week?');
+    await expect(page.locator('.answer')).toContainText(END);
+    await page.getByRole('button', { name: 'Atmos home' }).click();
+    await expect(page.getByText('Weather, anywhere')).toBeVisible();
+    expect(chatId(page)).not.toBe(before);
+  }
+});

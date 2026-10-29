@@ -17,7 +17,7 @@ export function Header({ onOpenKeyPanel }: { onOpenKeyPanel: () => void }) {
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(10px)', background: 'color-mix(in srgb, var(--mantine-color-body) 82%, transparent)' }}>
       <Group className="column" justify="space-between" h={56} wrap="nowrap" gap="xs">
-        <UnstyledButton onClick={() => navigate('/')} aria-label="New chat">
+        <UnstyledButton onClick={() => navigate("/")} aria-label="Atmos home">
           <Group gap={8} wrap="nowrap">
             <Logo />
             <Text fw={600} size="md">
