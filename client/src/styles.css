@@ -111,6 +111,12 @@ body {
   outline: none;
 }
 
+/* Hourly chart: the plot runs edge to edge, so the first and last condition icons (centred on their
+   hour) draw into the card's margin instead of being clipped by the chart's own bounds. */
+.hourly-chart .recharts-surface {
+  overflow: visible;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

@@ -54,9 +54,6 @@ export function HourlyChart({ spec, units }: { spec: ChartOf<'hourly'>; units: U
   const rainy = probability ? maxRain >= 20 : maxRain >= 0.1;
   const DayIcon = weatherIcon(dominantCode(rows), true);
   const deg = (v: number) => `${Math.round(v)}°`;
-  // Room at both ends of the time axis, so the first and last icons and markers are never clipped.
-  // Every panel uses the same padding, so their hours line up.
-  const edge = { left: 14, right: 14 };
   const label = (r: Row) => `${deg(r.temp!)} at ${fullTime(r.t)}`;
 
   const tooltip = ({ active, payload }: any) => {
@@ -74,7 +71,7 @@ export function HourlyChart({ spec, units }: { spec: ChartOf<'hourly'>; units: U
   };
 
   return (
-    <div data-chart role="img" aria-label={`${spec.title}. High ${label(hi)}, low ${label(lo)}.`}>
+    <div data-chart className="hourly-chart" role="img" aria-label={`${spec.title}. High ${label(hi)}, low ${label(lo)}.`}>
       <Group gap={10} align="center" mb={2} wrap="nowrap">
         <Text fz={34} fw={600} lh={1} style={{ letterSpacing: '-0.02em' }}>
           {deg(hi.temp)}
@@ -106,8 +103,8 @@ export function HourlyChart({ spec, units }: { spec: ChartOf<'hourly'>; units: U
               </linearGradient>
             </defs>
             <CartesianGrid stroke="var(--chart-grid)" vertical horizontal />
-            <XAxis xAxisId="icons" orientation="top" dataKey="t" ticks={iconTicks} interval={0} height={30} padding={edge} axisLine={false} tickLine={false} tick={<IconTick byTime={byTime} />} />
-            <XAxis dataKey="t" ticks={hourTicks} interval={0} padding={edge} {...axisProps} tickFormatter={(t: string) => (multiDay && hourOf(t) === 0 ? weekday(t) : String(hourOf(t)))} />
+            <XAxis xAxisId="icons" orientation="top" dataKey="t" ticks={iconTicks} interval={0} height={30} axisLine={false} tickLine={false} tick={<IconTick byTime={byTime} />} />
+            <XAxis dataKey="t" ticks={hourTicks} interval={0} {...axisProps} tickFormatter={(t: string) => (multiDay && hourOf(t) === 0 ? weekday(t) : String(hourOf(t)))} />
             <YAxis orientation="right" {...yAxisProps} width={40} domain={domain} ticks={ticksFor(domain)} tickFormatter={(v) => `${v}°`} />
             <Tooltip cursor={cursorProps} content={tooltip} />
             <Area
@@ -141,7 +138,7 @@ export function HourlyChart({ spec, units }: { spec: ChartOf<'hourly'>; units: U
             <ResponsiveContainer>
               <ComposedChart data={rows} margin={{ top: 4, right: 0, bottom: 0, left: 4 }} syncId={id}>
                 <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-                <XAxis dataKey="t" hide padding={edge} />
+                <XAxis dataKey="t" hide />
                 <YAxis orientation="right" {...yAxisProps} width={40} domain={probability ? [0, 100] : [0, 'auto']} ticks={probability ? [0, 100] : undefined} tickFormatter={(v) => (probability ? `${v}%` : `${v}`)} />
                 {/* Linked to the panel above (syncId): it shows the one tooltip for both; this one only highlights. */}
                 <Tooltip cursor={{ fill: 'var(--surface-muted)' }} content={() => null} />
