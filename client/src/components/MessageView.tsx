@@ -127,7 +127,7 @@ function Steps({ parts, streaming }: { parts: ToolPart[]; streaming: boolean }) 
           {parts.map((p) => (
             <Group key={p.toolCallId} gap={8} wrap="nowrap">
               <StepIcon part={p} />
-              <Text size="sm" c="dimmed" truncate>
+              <Text size="sm" c="dimmed" truncate className={p.state === 'input-streaming' || p.state === 'input-available' ? 'shimmer' : undefined}>
                 {stepLabel(p)}
               </Text>
             </Group>

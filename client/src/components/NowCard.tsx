@@ -51,12 +51,14 @@ export function NowCard({ data }: { data: CurrentWeather & { stale?: boolean } }
         <div style={{ height: 0.5, background: 'rgba(255,255,255,0.25)', margin: '10px 0 2px' }} />
         <div className="hour-strip" aria-label="Next hours">
           {hours.map((h, i) => {
-            const HourIcon = weatherIcon(h.code ?? data.weatherCode, h.isDay ?? data.isDay);
+            // "Now" is the current reading (the same as the big number), not the hour's forecast.
+            const now = i === 0;
+            const HourIcon = weatherIcon(now ? data.weatherCode : h.code ?? data.weatherCode, now ? data.isDay : h.isDay ?? data.isDay);
             return (
               <div key={h.time} className="hour-cell">
-                <span style={{ opacity: 0.9 }}>{i === 0 ? 'Now' : h.time.slice(11, 13)}</span>
+                <span style={{ opacity: 0.9 }}>{now ? 'Now' : h.time.slice(11, 13)}</span>
                 <HourIcon size={22} stroke={1.6} aria-hidden />
-                <span style={{ fontSize: 16 }}>{t(h.temperature)}</span>
+                <span style={{ fontSize: 16 }}>{t(now ? data.temperature : h.temperature)}</span>
               </div>
             );
           })}
