@@ -4,12 +4,22 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { PROVIDER_INFO, type ChatSummary } from '@wwa/shared';
 import { api } from '../lib/api';
+import { isCurrentChatEmpty } from '../lib/currentChat';
 import { updateSettings, useSettings } from '../lib/settings';
 import { useAppStatus } from '../lib/status';
 import { Logo } from './Logo';
 
 export function Header({ onOpenKeyPanel }: { onOpenKeyPanel: () => void }) {
   const navigate = useNavigate();
+  // Already on an empty chat: stay (and focus the input) rather than opening yet another one.
+  const goHome = () => {
+    if (isCurrentChatEmpty()) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Message"]')?.focus();
+      return;
+    }
+    navigate('/');
+  };
   const { settings } = useSettings();
   const { setColorScheme } = useMantineColorScheme();
   const scheme = useComputedColorScheme('light');
@@ -17,7 +27,7 @@ export function Header({ onOpenKeyPanel }: { onOpenKeyPanel: () => void }) {
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(10px)', background: 'color-mix(in srgb, var(--mantine-color-body) 82%, transparent)' }}>
       <Group className="column" justify="space-between" h={56} wrap="nowrap" gap="xs">
-        <UnstyledButton onClick={() => navigate("/")} aria-label="Atmos home">
+        <UnstyledButton onClick={goHome} aria-label="Atmos home">
           <Group gap={8} wrap="nowrap">
             <Logo />
             <Text fw={600} size="md">
@@ -48,7 +58,7 @@ export function Header({ onOpenKeyPanel }: { onOpenKeyPanel: () => void }) {
           </Tooltip>
           <HistoryMenu />
           <Tooltip label="New chat">
-            <ActionIcon variant="subtle" color="gray" size="lg" radius="xl" onClick={() => navigate('/')} aria-label="New chat">
+            <ActionIcon variant="subtle" color="gray" size="lg" radius="xl" onClick={goHome} aria-label="New chat">
               <IconPlus size={18} stroke={1.6} />
             </ActionIcon>
           </Tooltip>

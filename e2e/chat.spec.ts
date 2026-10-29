@@ -121,3 +121,13 @@ test('an hour-by-hour question draws the Apple-style hourly chart', async ({ pag
   await expect(chart.locator('linearGradient')).toHaveCount(2); // temperature-colored line and fill
   await expect(page.locator('.answer')).toContainText(END);
 });
+
+test('on an empty chat, the logo and "+" stay put instead of opening another one', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByText('Weather, anywhere')).toBeVisible();
+  const before = chatId(page);
+  await page.getByRole('button', { name: 'Atmos home' }).click();
+  await page.getByRole('button', { name: 'New chat' }).click();
+  await expect(page.getByLabel('Message')).toBeFocused();
+  expect(chatId(page)).toBe(before);
+});
