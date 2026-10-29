@@ -1,0 +1,241 @@
+{
+  "model": "gemini-3.6-flash",
+  "passed": 17,
+  "total": 17,
+  "results": [
+    {
+      "id": "week-outlook",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "get_forecast",
+        "show_chart"
+      ],
+      "charts": [
+        "temperature_range"
+      ],
+      "toolErrors": [],
+      "ms": 5970,
+      "answer": "Tokyo will see mild conditions early in the week before cooler temperatures and rain arrive starting Monday. \n\n* The week peaks on Saturday with a high of 23.5°C under overcast skies.\n* Temperatures drop to a high of 15.1°C by Wednesday as wet weather moves in.\n* Expect intermittent rain and showers through the latter half of the week, totaling 29.4 mm of precipitation."
+    },
+    {
+      "id": "rain-next-hours",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "get_forecast",
+        "show_chart"
+      ],
+      "charts": [
+        "hourly"
+      ],
+      "toolErrors": [],
+      "ms": 5045,
+      "answer": "No rain is expected in London (England, United Kingdom) over the next 24 hours. \n\n- Skies will transition from overcast to clear overnight and into tomorrow.\n- Temperatures will range from a low of 10.7°C early tomorrow morning up to a high of 16°C in the afternoon.\n- Winds will remain light, staying mostly under 11 km/h."
+    },
+    {
+      "id": "compare-three",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "get_forecast",
+        "get_forecast",
+        "get_forecast",
+        "show_chart"
+      ],
+      "charts": [
+        "compare"
+      ],
+      "toolErrors": [],
+      "ms": 5350,
+      "answer": "Madrid and Rome will be significantly warmer than Paris over the next five days, with afternoon highs frequently exceeding 20°C. \n- Madrid stays the warmest and driest, peaking at 22.3°C on Friday with clear to partly cloudy skies.\n- Rome reaches up to 20.8°C, but expects some light rain and showers heading into the weekend.\n- Paris remains the coolest city, with daily highs dropping from 15.6°C down to 11.5°C by Sunday under mostly overcast conditions."
+    },
+    {
+      "id": "warmer-than-normal",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "get_history",
+        "show_chart"
+      ],
+      "charts": [
+        "anomaly"
+      ],
+      "toolErrors": [],
+      "ms": 5761,
+      "answer": "Last month in New York was slightly cooler than normal overall, with a mean temperature difference of -0.6°C compared to the 1991–2020 average. \n\nWhile most of the month experienced temperatures close to normal, late September saw a notable cool spell with daily highs dropping to 14.1°C on September 26. Temperatures recovered toward the end of the month, peaking at 23.2°C on September 30."
+    },
+    {
+      "id": "now-temperature",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "get_current"
+      ],
+      "charts": [],
+      "toolErrors": [],
+      "ms": 3029,
+      "answer": "It is currently 7.2°C in Reykjavík with mainly clear skies, feeling like 2.7°C."
+    },
+    {
+      "id": "air-quality",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "get_air_quality",
+        "show_chart"
+      ],
+      "charts": [
+        "air_quality"
+      ],
+      "toolErrors": [],
+      "ms": 5757,
+      "answer": "Air quality in Delhi is expected to be poor to extremely poor over the next few days. \n\n- Conditions peak into the extremely poor category on Sunday and Monday, with maximum European AQI values reaching 125 and 121.\n- Air quality improves slightly to poor by Tuesday."
+    },
+    {
+      "id": "raining-now",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "get_current"
+      ],
+      "charts": [],
+      "toolErrors": [],
+      "ms": 3133,
+      "answer": "No, it is not raining in Oslo right now; the sky is clear with a temperature of 9.4°C."
+    },
+    {
+      "id": "past-rain",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "get_history",
+        "show_chart"
+      ],
+      "charts": [
+        "precipitation"
+      ],
+      "toolErrors": [],
+      "ms": 6054,
+      "answer": "A total of 11.3 mm of rain fell in Mumbai over the past two weeks. \n\nMost of the precipitation fell across five damp days, with the highest single-day total reaching 3.2 mm on October 24."
+    },
+    {
+      "id": "explicit-chart",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "get_forecast",
+        "show_chart"
+      ],
+      "charts": [
+        "temperature_range"
+      ],
+      "toolErrors": [],
+      "ms": 5662,
+      "answer": "Here is the 10-day temperature outlook for Cairo, Egypt.\n\nTemperatures will climb steadily early in the week, peaking at a warm 33.8°C on Wednesday, November 4, before dropping off sharply toward the weekend to a cooler high of 24.2°C by Saturday, November 7. Expect dry conditions throughout the period with no rain forecasted."
+    },
+    {
+      "id": "text-only",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "get_forecast"
+      ],
+      "charts": [],
+      "toolErrors": [],
+      "ms": 3437,
+      "answer": "Tomorrow in Sydney, New South Wales, Australia, you can expect fog with a high of 22.8°C and a low of 13.5°C."
+    },
+    {
+      "id": "hourly-tomorrow",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "get_forecast",
+        "show_chart"
+      ],
+      "charts": [
+        "hourly"
+      ],
+      "toolErrors": [],
+      "ms": 8592,
+      "answer": "Tomorrow in Berlin, temperatures will range from a low of 6.5°C in the early morning to a high of 10.8°C in the afternoon. \n\n- Morning starts chilly with fog and light drizzle around 7°C.\n- Conditions stay mostly overcast with light rain moving in by late afternoon."
+    },
+    {
+      "id": "compare-rain",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "get_forecast",
+        "get_forecast",
+        "show_chart"
+      ],
+      "charts": [
+        "compare"
+      ],
+      "toolErrors": [],
+      "ms": 5450,
+      "answer": "Both Seattle and Vancouver are expecting very dry conditions over the next 7 days, with nearly identical total rainfall.\n\n* Seattle will receive a total of 2.4 mm of precipitation, mostly concentrated on Friday with 1.9 mm.\n* Vancouver expects 2.2 mm in total, with light rain and drizzle split across Thursday and Friday.\n* The weekend and early next week will be largely dry for both cities under overcast skies."
+    },
+    {
+      "id": "single-past-day",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "get_history"
+      ],
+      "charts": [],
+      "toolErrors": [],
+      "ms": 3030,
+      "answer": "On 15 July 1990, Rome experienced partly cloudy skies with a high of 30.2°C and a low of 18.2°C. No precipitation was recorded, and maximum winds reached 13 km/h."
+    },
+    {
+      "id": "imperial",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "get_forecast",
+        "show_chart"
+      ],
+      "charts": [
+        "temperature_range"
+      ],
+      "toolErrors": [],
+      "ms": 5862,
+      "answer": "This weekend in Chicago will bring mild temperatures and a chance of drizzle, with highs reaching 60°F on Saturday and 64°F on Sunday. \n\n* Saturday is the coolest and wettest part of the weekend, with a high of 60°F, a low of 53°F, and a 51% chance of drizzle.\n* Sunday turns slightly warmer with a high of 64°F and a low of 57°F under mostly cloudy skies."
+    },
+    {
+      "id": "follow-up-conversion",
+      "pass": true,
+      "failures": [],
+      "tools": [],
+      "charts": [],
+      "toolErrors": [],
+      "ms": 2341,
+      "answer": "The warmest day is today, Thursday, October 29, with a high of 22.5°C, which is 72.5°F."
+    },
+    {
+      "id": "ambiguous-place",
+      "pass": true,
+      "failures": [],
+      "tools": [
+        "find_place",
+        "get_current"
+      ],
+      "charts": [],
+      "toolErrors": [],
+      "ms": 7073,
+      "answer": "It is currently 26.3°C with clear skies in Springfield, Missouri. Temperatures today will reach a high of 26.8°C with a low of 14.5°C and light winds at 12 km/h. \n\n*(There are several places named Springfield; I've checked Springfield, Missouri. Let me know if you meant a different one!)*"
+    },
+    {
+      "id": "off-topic",
+      "pass": true,
+      "failures": [],
+      "tools": [],
+      "charts": [],
+      "toolErrors": [],
+      "ms": 1514,
+      "answer": "I can only help you with weather and climate forecasts, history, and air quality. Let me know if you would like a weather report for any location!"
+    }
+  ]
+}

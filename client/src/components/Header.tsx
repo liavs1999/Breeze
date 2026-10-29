@@ -1,5 +1,5 @@
 import { ActionIcon, Badge, Group, Menu, SegmentedControl, Text, Tooltip, UnstyledButton, useComputedColorScheme, useMantineColorScheme } from '@mantine/core';
-import { IconHistory, IconMoon, IconPlus, IconSun, IconTrash } from '@tabler/icons-react';
+import { IconHistory, IconKey, IconMoon, IconPlus, IconSun, IconTrash } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { PROVIDER_INFO, type ChatSummary } from '@wwa/shared';
@@ -27,6 +27,9 @@ export function Header({ onOpenKeyPanel }: { onOpenKeyPanel: () => void }) {
         </UnstyledButton>
         <Group gap={6} wrap="nowrap">
           <KeyBadge onClick={onOpenKeyPanel} />
+          <ActionIcon variant="subtle" color="gray" size="lg" radius="xl" onClick={onOpenKeyPanel} aria-label="Model and key" hiddenFrom="xs">
+            <IconKey size={18} stroke={1.6} />
+          </ActionIcon>
           <SegmentedControl
             size="xs"
             radius="xl"

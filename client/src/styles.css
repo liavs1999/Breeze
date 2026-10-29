@@ -15,7 +15,8 @@ body {
   background: var(--mantine-color-body);
 }
 
-[data-mantine-color-scheme='light'] {
+/* :root + attribute, so these win over Mantine's own scheme variables. */
+:root[data-mantine-color-scheme='light'] {
   --mantine-color-body: #fbfbfa;
   --surface: #ffffff;
   --surface-muted: #f3f3f1;
@@ -35,7 +36,7 @@ body {
   --normal-band: rgba(82, 81, 78, 0.12);
 }
 
-[data-mantine-color-scheme='dark'] {
+:root[data-mantine-color-scheme='dark'] {
   --mantine-color-body: #141517;
   --surface: #1b1c1e;
   --surface-muted: #232427;

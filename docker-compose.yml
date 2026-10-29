@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    ports: ["8787:8787"]
+    env_file:
+      - path: server/.env
+        required: false
+    volumes: [app-data:/data]
+volumes:
+  app-data: {}
