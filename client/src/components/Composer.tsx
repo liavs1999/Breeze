@@ -47,7 +47,7 @@ export function Composer({ chatId, busy, onSend, onStop }: { chatId: string; bus
             />
             {busy ? (
               <Tooltip label="Stop">
-                <ActionIcon size={36} radius="xl" variant="filled" color="gray" onClick={onStop} aria-label="Stop the answer">
+                <ActionIcon size={36} radius="xl" variant="filled" className="radar-stop" onClick={onStop} aria-label="Stop the answer">
                   <IconPlayerStopFilled size={14} />
                 </ActionIcon>
               </Tooltip>

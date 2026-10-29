@@ -201,47 +201,103 @@ body {
   }
 }
 
-/* ── Composer: a frosted capsule that glows while the agent is working ───────────────────────── */
+/* ── Composer: while the agent works, a radar beam circles the capsule ───────────────────────
+   One color, never a rainbow: the sky of the place being discussed, mixed with the accent, so the
+   beam is deep navy for a night in Reykjavík and bright blue for a morning in Sydney. */
 
 .composer {
   position: relative;
   border-radius: 28px;
+  --beam: color-mix(in srgb, var(--sky-top) 55%, var(--accent));
 }
-.composer::before,
-.composer::after {
+/* On a dark page the beam uses the lighter end of the sky, lifted toward white, so it reads as light. */
+:root[data-mantine-color-scheme='dark'] .composer {
+  --beam: color-mix(in srgb, color-mix(in srgb, var(--sky-bottom) 50%, var(--accent)) 75%, white);
+}
+/* The beam: a bright head with a fading trail, masked to a thin ring around the capsule. */
+.composer::before {
   content: '';
   position: absolute;
-  pointer-events: none;
+  inset: -2px;
+  padding: 2px;
   border-radius: inherit;
-  background: conic-gradient(from var(--glow-angle), #ff9f0a, #ff375f, #bf5af2, #5e5ce6, #0a84ff, #64d2ff, #ff9f0a);
-  opacity: 0;
-  transition: opacity 0.5s ease;
-  animation: glow-spin 4s linear infinite;
-}
-/* A crisp gradient ring… */
-.composer::before {
-  inset: -1.5px;
-  padding: 1.5px;
+  pointer-events: none;
+  z-index: 1;
+  background: conic-gradient(
+    from var(--glow-angle),
+    transparent 0turn,
+    transparent 0.6turn,
+    color-mix(in srgb, var(--beam) 30%, transparent) 0.85turn,
+    var(--beam) 0.99turn,
+    transparent 1turn
+  );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  animation: beam 2.4s linear infinite;
 }
-/* …and a soft glow behind it. */
+/* A halo that breathes once per sweep. */
 .composer::after {
-  inset: -7px;
-  filter: blur(16px);
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
   z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
 .composer[data-busy='true']::before {
   opacity: 1;
 }
 .composer[data-busy='true']::after {
-  opacity: 0.5;
+  opacity: 1;
+  animation: halo 2.4s ease-in-out infinite;
 }
-@keyframes glow-spin {
+
+/* The stop button is a small radar scope: a dark disc, a range ring and the same sweeping beam. */
+.radar-stop {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: #1c1c1e !important;
+  color: #fff !important;
+}
+:root[data-mantine-color-scheme='dark'] .radar-stop {
+  background: #2c2c2e !important;
+}
+.radar-stop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from var(--glow-angle), transparent 0turn, transparent 0.65turn, color-mix(in srgb, var(--beam) 85%, transparent) 1turn);
+  animation: beam 2.4s linear infinite;
+  z-index: -1;
+}
+.radar-stop::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  z-index: -1;
+}
+
+@keyframes beam {
   to {
     --glow-angle: 360deg;
+  }
+}
+@keyframes halo {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--beam) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 24px 2px color-mix(in srgb, var(--beam) 30%, transparent);
   }
 }
 
@@ -387,7 +443,8 @@ body {
   .fade-in,
   .shimmer,
   .composer::before,
-  .composer::after {
+  .composer::after,
+  .radar-stop::before {
     animation: none;
   }
 }
