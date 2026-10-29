@@ -140,7 +140,8 @@ export function HourlyChart({ spec, units }: { spec: ChartOf<'hourly'>; units: U
                 <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
                 <XAxis dataKey="t" hide />
                 <YAxis orientation="right" {...yAxisProps} width={40} domain={probability ? [0, 100] : [0, 'auto']} ticks={probability ? [0, 100] : undefined} tickFormatter={(v) => (probability ? `${v}%` : `${v}`)} />
-                <Tooltip cursor={{ fill: 'var(--surface-muted)' }} content={tooltip} />
+                {/* Linked to the panel above (syncId): it shows the one tooltip for both; this one only highlights. */}
+                <Tooltip cursor={{ fill: 'var(--surface-muted)' }} content={() => null} />
                 <Bar dataKey="rain" fill={COLORS.blue} maxBarSize={10} radius={[3, 3, 0, 0]} isAnimationActive={false} />
               </ComposedChart>
             </ResponsiveContainer>
