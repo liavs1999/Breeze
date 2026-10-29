@@ -17,7 +17,7 @@ minimal UI, and a chat that survives refreshes and network failures.
 | Model | Switchable by one setting (Gemini, Groq, Claude, OpenAI); develop on a free key | Free tiers are tight (5 requests/min hurt us last time); choose the demo model by measured speed |
 | Delivery | Public GitHub repo + hosted demo | Reviewers can try it from a link; the README still covers running it locally |
 | Data | Open-Meteo only | Global, free, no key, 600 calls/min and 10,000/day; credited in the UI (CC BY 4.0) |
-| Agent shape | One agent, five tools | Several agents would add latency and gain nothing at this size |
+| Agent shape | One agent, six tools | Several agents would add latency and gain nothing at this size |
 | Design system | Mantine 9, no Tailwind | Neutral modern look by default; its charts share the theme and dark mode; plain CSS; hooks for offline state and local storage; no theme flash on refresh |
 | API key | Paste your own key in the app, checked on the spot; a server key is the fallback | Reviewers can use their own key without editing files; the hosted demo works without one |
 
@@ -34,6 +34,7 @@ Each question fetches only what it needs, with a short cache (forecast ~10 min, 
 
 ## Agent and tools
 
+- `get_current(place)`: conditions now; the client shows it as the "now" card (not a chart).
 - `find_place(query)`: only for ambiguous names ("Springfield"); the other tools resolve names themselves to save a
   step.
 - `get_forecast(place, days, hourly | daily, metrics)`: includes current conditions.
@@ -132,7 +133,7 @@ greeting and four example questions, the chart ones marked. Answers stream in; t
 | Area | Libraries |
 |---|---|
 | Client | React 19, Vite 8, Mantine 9 (core, hooks, charts, notifications), `@ai-sdk/react` (`useChat` with resume), React Router, `react-markdown` + `remend` (clean half-written markdown while streaming), Tabler icons |
-| Charts | `@mantine/charts` for line, bar, area and sparkline; Recharts 3 directly (Mantine's charts are built on it) for the temperature band and the two-panel hourly chart, styled with the same theme |
+| Charts | Recharts 3 for all six chart kinds (one consistent set of mark specs); Mantine's `Sparkline` in the now card |
 | Server | Hono + `@hono/node-server`, AI SDK 7 + `@ai-sdk/google`, `groq`, `anthropic`, `openai`, zod 4 (schemas shared with the client), SQLite via `node:sqlite` (fallback `better-sqlite3`), `lru-cache` |
 | Tests | Vitest, MSW (fake Open-Meteo responses, including failures), Playwright |
 | Tooling | npm workspaces (`server`, `client`, `shared`), TypeScript, oxlint |
@@ -168,3 +169,22 @@ evals/     chart-trigger prompts and runner
 
 - Deadline (the PDF does not state one).
 - Extras: "weather where I am" (browser location), voice input.
+
+## Build log (29 Oct)
+
+Decisions made while building, with the reason:
+
+- **All six charts in Recharts directly** rather than splitting between Mantine Charts and Recharts: one set of mark
+  specs (2 px lines, 24 px bars with rounded ends, crosshair tooltip, one y-axis) is easier to keep consistent.
+- **Default model `gemini-3.6-flash`, fallbacks `gemini-3.5-flash` → `gemini-3.5-flash-lite`.** On the free tier the
+  two Flash models allow only 20 requests per day each (measured: the quota error says so); Flash-Lite allows far
+  more. A model that reports a rate limit or spent quota is skipped until the provider's retry time.
+- **Chart reminder (`prepareStep`).** When fetched data qualifies for a chart and none was drawn, the next step's
+  instructions restate the rule. Flash-Lite went from skipping charts to 5/5 on the chart cases; text-only requests
+  stay text-only.
+- **History always from the archive.** The forecast API returns empty values for dates older than a few weeks;
+  the archive is complete through yesterday, and its unpublished last days are filled from the forecast API.
+- **`get_forecast` takes a `date`** for the hours of a named day ("tomorrow"), not just "the next N hours".
+
+Verified: 16 unit tests, 9 browser tests (reload mid-answer, dropped connection, weather failure, stop, offline,
+draft, key check), evals 17/17 with `gemini-3.6-flash` and 5/5 chart cases with `gemini-3.5-flash-lite`.

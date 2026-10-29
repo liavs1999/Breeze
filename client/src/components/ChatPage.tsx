@@ -196,24 +196,43 @@ function useReconnect({
   return canTry;
 }
 
-/** Restores the scroll position after a refresh; otherwise follows new content when already at the bottom. */
+/**
+ * Restores the scroll position after a refresh, and follows the answer while it grows, unless the
+ * reader scrolled up. "Following" is decided before the content grows (on scroll), not after, so a
+ * chart that appears at once does not break it.
+ */
 function useScrollMemory(chatId: string, count: number) {
-  const restored = useRef(false);
+  const follow = useRef(true);
+
   useEffect(() => {
-    if (restored.current) return;
-    restored.current = true;
     const saved = Number(read(`atmos:scroll:${chatId}`, 'session'));
-    requestAnimationFrame(() => window.scrollTo({ top: Number.isFinite(saved) && saved > 0 ? saved : document.body.scrollHeight }));
-    const onScroll = () => write(`atmos:scroll:${chatId}`, String(Math.round(window.scrollY)), 'session');
+    requestAnimationFrame(() => window.scrollTo({ top: Number.isFinite(saved) && saved > 0 ? saved : document.documentElement.scrollHeight }));
+    const onScroll = () => {
+      follow.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 80;
+      write(`atmos:scroll:${chatId}`, String(Math.round(window.scrollY)), 'session');
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    // Growth that is not a scroll (streamed text, a chart appearing): keep following.
+    const observer = new ResizeObserver(() => {
+      if (follow.current) window.scrollTo({ top: document.documentElement.scrollHeight });
+    });
+    // The app container grows with the content (the body itself is fixed at the window height).
+    const app = document.querySelector('.app');
+    if (app) observer.observe(app);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      observer.disconnect();
+    };
   }, [chatId]);
 
-  // Stick to the bottom while the answer grows, unless the reader scrolled up.
+  // A new message (the user just sent one) brings the bottom into view; not on first load, where
+  // the saved position wins.
+  const initialCount = useRef(count);
   useEffect(() => {
-    const nearBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 160;
-    if (nearBottom) window.scrollTo({ top: document.body.scrollHeight, behavior: count ? 'smooth' : 'auto' });
-  });
+    if (count === initialCount.current) return;
+    follow.current = true;
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+  }, [count]);
 }
 
 function Banner({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {

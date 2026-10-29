@@ -101,11 +101,19 @@ export const tools = {
       place,
       granularity: z.enum(['daily', 'hourly']).describe('daily for "this week", "next 10 days"; hourly for "today", "tonight", "tomorrow afternoon".'),
       days: z.number().int().min(1).max(16).optional().describe('Daily only. Default 7.'),
-      hours: z.number().int().min(6).max(168).optional().describe('Hourly only. Default 48.'),
+      hours: z.number().int().min(6).max(168).optional().describe('Hourly only, counted from now. Default 48.'),
+      date: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional()
+        .describe('Hourly only: one local day (YYYY-MM-DD) from 00:00 to 23:00, e.g. tomorrow. Use instead of hours for a named day.'),
     }),
-    execute: async ({ place: query, granularity, days, hours }) => {
+    execute: async ({ place: query, granularity, days, hours, date }) => {
+      if (date && (Date.parse(date) < Date.now() - 2 * 86_400_000 || Date.parse(date) > Date.now() + 15 * 86_400_000)) {
+        throw new ToolError('date must be within the next 15 days; use get_history for the past.');
+      }
       const { place: p, alternatives } = await locate(query);
-      const ds = saveDataset(await getForecast(p, { granularity, days, hours }));
+      const ds = saveDataset(await getForecast(p, { granularity, days, hours, date: granularity === 'hourly' ? date : undefined }));
       return { dataset_id: ds.id, ...placeInfo(ds.place, alternatives), ...summarize(ds), ...staleNote() };
     },
   }),

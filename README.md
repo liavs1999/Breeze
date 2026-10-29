@@ -57,9 +57,11 @@ client (React, Mantine) ──POST /api/chat──▶ server (Hono)
 resolves the place name itself (one step instead of two), returns a compact summary in the user's units (the full
 series stays on the server under a dataset id), and reports errors as instructions the model can act on ("Only 3
 data points: answer in text instead"). Inputs are strict schemas (zod, shared with the client). Charts reference
-dataset ids, so their numbers come from the API, never from the model. Guardrails: a step cap, timeouts, an
-explicit stop, a per-visitor limit on the server key, and a fallback model when the provider is rate-limited. Every
-step is logged (tools, tokens, model) and each answer shows which model answered and how long it took.
+dataset ids, so their numbers come from the API, never from the model. When fetched data qualifies for a chart and none
+was drawn, the next step's instructions restate the rule (`prepareStep`), which keeps smaller models consistent.
+Guardrails: a step cap, timeouts, an explicit stop, a per-visitor limit on the server key, and fallback models when
+the provider is rate-limited (a model that reports a spent quota is skipped until its reset). Every step is logged
+(tools, tokens, model) and each answer shows which model answered and how long it took.
 
 **Streaming and resilience.**
 
@@ -95,5 +97,7 @@ e2e/      Playwright tests          PLAN.md   plan and decisions
 ## Notes
 
 - Weather data: [Open-Meteo](https://open-meteo.com/) (free for non-commercial use, CC BY 4.0).
+- Free Gemini keys allow only about 20 requests a day on the Flash models; the app then falls back to Flash-Lite
+  (marked "backup model" under the answer). A Groq key (free) or a paid key avoids this.
 - Your key stays in your browser; it is sent with each question in a header and never stored or logged.
 - One server instance: the resumable-stream buffer is in memory (with several instances it would move to Redis).

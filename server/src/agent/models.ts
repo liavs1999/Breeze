@@ -6,6 +6,7 @@ import { APICallError, RetryError, wrapLanguageModel, type LanguageModel } from 
 import { FALLBACK_MODELS, KEY_HEADERS, PROVIDER_INFO, PROVIDERS, type ProviderId } from '@wwa/shared';
 import { config } from '../config';
 import { currentContext, sleep } from '../context';
+import { log } from '../log';
 import { scriptedModel } from './scripted';
 
 export interface ModelChoice {
@@ -59,6 +60,22 @@ export function isRetryable(error: unknown): boolean {
 }
 
 /**
+ * Models that reported a rate limit or a spent quota are skipped until the provider says to retry
+ * (a free tier's daily quota can be spent for hours), so later answers do not waste calls on them.
+ */
+const blockedUntil = new Map<string, number>();
+const blockKey = (choice: ModelChoice, model: string) => `${choice.provider}:${model}:${choice.key.slice(-6)}`;
+
+function retryDelayMs(error: unknown): number {
+  if (RetryError.isInstance(error)) error = error.lastError;
+  const body = APICallError.isInstance(error) ? `${error.responseBody ?? ''} ${error.message}` : '';
+  const seconds = /"retryDelay"\s*:\s*"(\d+)(?:\.\d+)?s"/.exec(body)?.[1] ?? /retry in (\d+(?:\.\d+)?)s/i.exec(body)?.[1];
+  const header = APICallError.isInstance(error) ? Number(error.responseHeaders?.['retry-after']) : NaN;
+  const ms = seconds ? Number(seconds) * 1000 : Number.isFinite(header) ? header * 1000 : 60_000;
+  return Math.min(ms, 24 * 3600_000);
+}
+
+/**
  * The model for one answer. Wraps the chosen model so that when a call fails with a rate limit or an
  * overloaded server, the next fallback model takes over (same provider and key). `onModel` reports
  * which model actually answered. The llm_slow fault adds a delay before each call.
@@ -67,10 +84,14 @@ export function modelFor(choice: ModelChoice, onModel: (modelId: string) => void
   if (choice.model === 'scripted' && choice.origin === 'server' && !config.isProduction) {
     return wrapLanguageModel({ model: scriptedModel(), middleware: slowFault });
   }
-  const candidates = [choice.model, ...(FALLBACK_MODELS[choice.provider] ?? []).filter((m) => m !== choice.model)];
+  const all = [choice.model, ...(FALLBACK_MODELS[choice.provider] ?? []).filter((m) => m !== choice.model)];
+  const now = Date.now();
+  const available = all.filter((m) => (blockedUntil.get(blockKey(choice, m)) ?? 0) <= now);
+  const candidates = available.length ? available : all;
   const models = candidates.map((m) => baseModel(choice.provider, choice.key, m) as Exclude<LanguageModel, string>);
   return wrapLanguageModel({
     model: models[0] as any,
+    modelId: candidates[0],
     middleware: {
       specificationVersion: 'v4',
       wrapStream: async ({ doStream, params }) => {
@@ -84,6 +105,14 @@ export function modelFor(choice: ModelChoice, onModel: (modelId: string) => void
           } catch (error) {
             lastError = error;
             if (!isRetryable(error) || params.abortSignal?.aborted) throw error;
+            const delay = retryDelayMs(error);
+            blockedUntil.set(blockKey(choice, candidates[i]), Date.now() + delay);
+            log('model.fallback', {
+              from: candidates[i],
+              to: candidates[i + 1] ?? null,
+              status: APICallError.isInstance(error) ? error.statusCode : undefined,
+              skipForS: Math.round(delay / 1000),
+            });
           }
         }
         throw lastError;

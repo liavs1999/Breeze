@@ -10,6 +10,7 @@ export interface AnswerMetadata {
   inputTokens?: number;
   outputTokens?: number;
   staleData?: boolean;
+  fallback?: boolean;
 }
 
 /** Tool parts as the client sees them; only the shapes the UI renders are typed precisely. */

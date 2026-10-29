@@ -165,6 +165,13 @@ function AnswerFooter({ message }: { message: ChatMessage }) {
           </Text>
         </Tooltip>
       )}
+      {m.fallback && (
+        <Tooltip label="The chosen model was rate-limited, so a backup model answered.">
+          <Text size="xs" c="yellow.8">
+            backup model
+          </Text>
+        </Tooltip>
+      )}
       {m.staleData && (
         <Text size="xs" c="yellow.8">
           The weather service failed, so some data came from the cache.

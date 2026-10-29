@@ -174,30 +174,54 @@ function hourlyValues(hourly: any): Record<string, Series> {
   };
 }
 
-export async function getForecast(place: Place, opts: { granularity: 'daily' | 'hourly'; days?: number; hours?: number }): Promise<Omit<Dataset, 'id'>> {
+export async function getForecast(place: Place, opts: { granularity: 'daily' | 'hourly'; days?: number; hours?: number; date?: string }): Promise<Omit<Dataset, 'id'>> {
   if (opts.granularity === 'daily') {
     const days = clamp(opts.days ?? 7, 1, 16);
     const d = await fetchJson<any>(`${FORECAST}?${at(place)}&daily=${DAILY_VARS}&forecast_days=${days}`, 15 * MIN);
     return { kind: 'forecast', place: withTz(place, d), granularity: 'daily', time: d.daily.time, values: dailyValues(d.daily), sourceNote: `${SOURCE} forecast` };
   }
-  const hours = clamp(opts.hours ?? 48, 6, 168);
-  const d = await fetchJson<any>(`${FORECAST}?${at(place)}&hourly=${HOURLY_VARS}&forecast_hours=${hours}`, 15 * MIN);
+  const window = opts.date ? `start_date=${opts.date}&end_date=${opts.date}` : `forecast_hours=${clamp(opts.hours ?? 48, 6, 168)}`;
+  const d = await fetchJson<any>(`${FORECAST}?${at(place)}&hourly=${HOURLY_VARS}&${window}`, 15 * MIN);
   return { kind: 'forecast', place: withTz(place, d), granularity: 'hourly', time: d.hourly.time, values: hourlyValues(d.hourly), sourceNote: `${SOURCE} forecast` };
 }
 
-/** Past weather. The last 92 days come from the forecast API (no reporting delay); older days from ERA5. */
+/**
+ * Past weather from the historical archive (ERA5 with recent days included). If its last days are not
+ * published yet, they are filled from the forecast API, which keeps only the past few weeks.
+ */
 export async function getHistory(place: Place, opts: { start: string; end: string; granularity: 'daily' | 'hourly' }): Promise<Omit<Dataset, 'id'>> {
-  const recent = daysAgo(opts.start) <= 90;
-  const base = recent ? FORECAST : ARCHIVE;
-  const ttl = recent ? 60 * MIN : 30 * DAY;
+  const hourly = opts.granularity === 'hourly';
   const range = `start_date=${opts.start}&end_date=${opts.end}`;
-  const sourceNote = recent ? `${SOURCE} (recent analysis)` : `${SOURCE} historical (ERA5)`;
-  if (opts.granularity === 'hourly') {
-    const d = await fetchJson<any>(`${base}?${at(place)}&${range}&hourly=${recent ? HOURLY_VARS : HISTORY_HOURLY_VARS}`, ttl);
-    return { kind: 'history', place: withTz(place, d), granularity: 'hourly', time: d.hourly.time, values: hourlyValues(d.hourly), sourceNote };
+  const recent = daysAgo(opts.end) <= 10;
+  const d = await fetchJson<any>(`${ARCHIVE}?${at(place)}&${range}&${hourly ? `hourly=${HISTORY_HOURLY_VARS}` : `daily=${HISTORY_DAILY_VARS}`}`, recent ? 60 * MIN : 30 * DAY);
+  const block = hourly ? d.hourly : d.daily;
+  const values = hourly ? hourlyValues(block) : dailyValues(block);
+  const time: string[] = block.time;
+
+  const firstMissing = values.temperature_max ? missingTailStart(values.temperature_max) : missingTailStart(values.temperature);
+  let sourceNote = `${SOURCE} historical (ERA5)`;
+  if (firstMissing >= 0 && daysAgo(time[firstMissing].slice(0, 10)) <= 30) {
+    const from = time[firstMissing].slice(0, 10);
+    const f = await fetchJson<any>(`${FORECAST}?${at(place)}&start_date=${from}&end_date=${opts.end}&${hourly ? `hourly=${HOURLY_VARS}` : `daily=${DAILY_VARS}`}`, 60 * MIN);
+    const fb = hourly ? f.hourly : f.daily;
+    const fill = hourly ? hourlyValues(fb) : dailyValues(fb);
+    const index = new Map((fb.time as string[]).map((t, i) => [t, i]));
+    for (const [key, series] of Object.entries(values)) {
+      series.forEach((v, i) => {
+        const j = index.get(time[i]);
+        if (v == null && j != null && fill[key]?.[j] != null) series[i] = fill[key][j];
+      });
+    }
+    sourceNote = `${SOURCE} historical (ERA5; latest days from recent analysis)`;
   }
-  const d = await fetchJson<any>(`${base}?${at(place)}&${range}&daily=${recent ? DAILY_VARS : HISTORY_DAILY_VARS}`, ttl);
-  return { kind: 'history', place: withTz(place, d), granularity: 'daily', time: d.daily.time, values: dailyValues(d.daily), sourceNote };
+  return { kind: 'history', place: withTz(place, d), granularity: opts.granularity, time, values, sourceNote };
+}
+
+/** Index where the trailing run of missing values starts, or -1 if the series ends with data. */
+function missingTailStart(series: Series): number {
+  let i = series.length;
+  while (i > 0 && series[i - 1] == null) i--;
+  return i === series.length ? -1 : i;
 }
 
 /**

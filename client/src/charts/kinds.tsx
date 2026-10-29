@@ -306,8 +306,9 @@ function anomaly(spec: ChartOf<'anomaly'>, units: UnitSystem): RenderedChart {
       normal: d.normal,
     };
   });
+  // Symmetric around zero, on even steps: ±2, ±4, ±6…
   const extent = Math.max(1, ...data.map((d) => Math.abs(d.delta ?? 0)));
-  const lim = Math.ceil(extent * 1.15);
+  const lim = Math.max(2, Math.ceil((extent * 1.1) / 2) * 2);
   const signed = (v: number | null) => (v == null ? '–' : `${v > 0 ? '+' : ''}${v}${unit}`);
 
   return {
@@ -326,7 +327,7 @@ function anomaly(spec: ChartOf<'anomaly'>, units: UnitSystem): RenderedChart {
           <ComposedChart data={data} margin={margin} stackOffset="sign" barCategoryGap="18%">
             <CartesianGrid {...gridProps} />
             <XAxis dataKey="t" {...axisProps} tickFormatter={(x) => dayTick(x, data.length)} minTickGap={12} />
-            <YAxis {...yAxisProps} domain={[-lim, lim]} tickFormatter={(v) => `${v > 0 ? '+' : ''}${v}°`} />
+            <YAxis {...yAxisProps} domain={[-lim, lim]} ticks={[-lim, -lim / 2, 0, lim / 2, lim]} tickFormatter={(v) => `${v > 0 ? '+' : ''}${v}°`} />
             <ReferenceLine y={0} stroke="var(--chart-axis)" />
             <Tooltip
               cursor={{ fill: 'var(--surface-muted)' }}
@@ -380,7 +381,7 @@ function airQuality(spec: ChartOf<'air_quality'>): RenderedChart {
     body: (
       <ChartFrame height={240} label={spec.title}>
         <ResponsiveContainer>
-          <ComposedChart data={data} margin={{ ...margin, right: 80 }}>
+          <ComposedChart data={data} margin={{ ...margin, right: 104 }}>
             {bands.map((b) => (
               <ReferenceArea
                 key={b.label}
@@ -394,7 +395,7 @@ function airQuality(spec: ChartOf<'air_quality'>): RenderedChart {
               />
             ))}
             <XAxis dataKey="t" {...axisProps} tickFormatter={(x) => (daily ? dayTick(x, data.length) : hourTick(x))} minTickGap={12} />
-            <YAxis {...yAxisProps} domain={[0, Math.ceil(top)]} />
+            <YAxis {...yAxisProps} domain={[0, Math.ceil(top)]} ticks={[0, ...bands.map((b) => b.max).filter((m) => m < top)]} />
             <Tooltip
               cursor={{ fill: 'var(--surface-muted)' }}
               content={({ active, payload }) => {

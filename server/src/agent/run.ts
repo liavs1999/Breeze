@@ -30,6 +30,8 @@ export interface AnswerMetadata {
   inputTokens?: number;
   outputTokens?: number;
   staleData?: boolean;
+  /** True when a fallback model answered because the chosen one was rate-limited. */
+  fallback?: boolean;
 }
 
 export type ChatMessage = UIMessage<AnswerMetadata>;
@@ -70,11 +72,12 @@ export async function startAnswer({ chatId, messages, choice, units, userTimezon
       maxRetries: 1,
       providerOptions: { google: { thinkingConfig: { thinkingLevel: 'low' } } },
       experimental_transform: smoothStream({ delayInMs: 8, chunking: 'word' }),
+      prepareStep: ({ steps }) => chartReminder(steps, instructions({ units, userTimezone })),
       onStepEnd: (step) =>
         log('agent.step', {
           chat: chatId,
           step: step.stepNumber,
-          model: step.model.modelId,
+          model: answeredBy,
           tools: step.toolCalls.map((c) => c.toolName),
           toolErrors: step.content.filter((c) => c.type === 'tool-error').length,
           finish: step.finishReason,
@@ -97,6 +100,7 @@ export async function startAnswer({ chatId, messages, choice, units, userTimezon
             inputTokens: part.totalUsage.inputTokens,
             outputTokens: part.totalUsage.outputTokens,
             staleData: ctx.usedStaleData || undefined,
+            fallback: answeredBy !== choice.model || undefined,
           };
         }
         return undefined;
@@ -110,6 +114,27 @@ export async function startAnswer({ chatId, messages, choice, units, userTimezon
 
     return startRun(chatId, abort, ui.pipeThrough(new JsonToSseTransformStream()));
   });
+}
+
+const DATA_TOOLS = new Set(['get_forecast', 'get_history', 'get_air_quality']);
+
+/**
+ * The chart skill's reminder: when the fetched data qualifies for a chart (4+ days, 6+ hours, or
+ * several places) and no chart was drawn yet, the next step's instructions restate the rule. The
+ * agent still decides (text-only requests stay text-only); this keeps smaller models consistent.
+ */
+function chartReminder(steps: { toolCalls: { toolName: string }[]; toolResults: { toolName: string; output: unknown }[] }[], base: string) {
+  if (steps.some((s) => s.toolCalls.some((c) => c.toolName === 'show_chart'))) return undefined;
+  const qualifying = steps
+    .flatMap((s) => s.toolResults)
+    .filter((r) => DATA_TOOLS.has(r.toolName))
+    .map((r) => r.output as { dataset_id?: string; summary?: { days?: number; hours?: number }; days?: unknown[] })
+    .filter((o) => o?.dataset_id && ((o.summary?.days ?? 0) >= 4 || (o.summary?.hours ?? 0) >= 6 || (o.days?.length ?? 0) >= 2));
+  if (!qualifying.length) return undefined;
+  const ids = qualifying.map((o) => o.dataset_id).join(', ');
+  return {
+    instructions: `${base}\n\nReminder (chart rule): the data you fetched (${ids}) qualifies for a chart. Unless the user asked for text only, call show_chart with the fitting kind before you write the answer.`,
+  };
 }
 
 /**

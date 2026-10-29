@@ -48,8 +48,8 @@ export function buildChart(req: ChartRequest): ChartSpec {
 function temperatureRange(ds: Dataset): ChartSpec {
   requireKind(ds, ['forecast', 'history'], 'temperature_range');
   requireGranularity(ds, 'daily', 'temperature_range', 'Use kind "hourly" for hourly data.');
-  requirePoints(ds.time.length);
   const { temperature_max: max, temperature_min: min } = ds.values;
+  requirePoints(filled(max));
   return {
     kind: 'temperature_range',
     title: `${ds.kind === 'forecast' ? `${ds.time.length}-day temperature outlook` : 'Daily temperatures'} · ${ds.place.name}`,
@@ -68,12 +68,12 @@ function temperatureRange(ds: Dataset): ChartSpec {
 function hourly(ds: Dataset): ChartSpec {
   requireKind(ds, ['forecast', 'history'], 'hourly');
   requireGranularity(ds, 'hourly', 'hourly', 'Use kind "temperature_range" or "precipitation" for daily data.');
-  requirePoints(ds.time.length, 6);
+  requirePoints(filled(ds.values.temperature), 6);
   const probability = ds.kind === 'forecast' && ds.values.precipitation_probability.some((v) => v != null);
   const rain = probability ? ds.values.precipitation_probability : ds.values.precipitation;
   return {
     kind: 'hourly',
-    title: `Next ${ds.time.length} hours · ${ds.place.name}`.replace('Next', ds.kind === 'forecast' ? 'Next' : 'Past'),
+    title: hourlyTitle(ds),
     subtitle: subtitle(ds),
     source: source(ds),
     place: chartPlace(ds),
@@ -82,10 +82,20 @@ function hourly(ds: Dataset): ChartSpec {
   };
 }
 
+function hourlyTitle(ds: Dataset) {
+  const n = ds.time.length;
+  if (ds.kind === 'history') return `Hour by hour · ${ds.place.name}`;
+  if (n === 24 && ds.time[0].endsWith('T00:00')) {
+    const day = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(`${ds.time[0]}:00Z`));
+    return `${day}, hour by hour · ${ds.place.name}`;
+  }
+  return `Next ${n} hours · ${ds.place.name}`;
+}
+
 function precipitation(ds: Dataset): ChartSpec {
   requireKind(ds, ['forecast', 'history'], 'precipitation');
-  requirePoints(ds.time.length);
   const { rain, snow } = ds.values;
+  requirePoints(filled(ds.values.precipitation));
   const hasSnow = snow.some((v) => (v ?? 0) > 0.05);
   return {
     kind: 'precipitation',
@@ -104,8 +114,8 @@ function anomaly(ds: Dataset): ChartSpec {
   if (!ds.normals) {
     throw new ChartRuleError('An anomaly chart needs the normal. Fetch the data with compare_to_normal: true, then chart it.');
   }
-  requirePoints(ds.time.length);
   const mean = ds.values.temperature_mean;
+  requirePoints(filled(mean));
   return {
     kind: 'anomaly',
     title: `Warmer or colder than normal · ${ds.place.name}`,
@@ -190,9 +200,12 @@ function compare(datasets: Dataset[], metric: CompareMetric): ChartSpec {
 
 // ── Rule helpers ────────────────────────────────────────────────────────────────────────────────
 
+/** Counts only points with data: a series that is mostly gaps is not worth a chart. */
+const filled = (series: (number | null)[] | undefined) => (series ?? []).filter((v) => v != null).length;
+
 function requirePoints(n: number, min = MIN_POINTS) {
   if (n < min) {
-    throw new ChartRuleError(`Only ${n} data point(s): too few for a chart (minimum ${min}). Answer in text instead.`);
+    throw new ChartRuleError(`Only ${n} data point(s) with values: too few for a chart (minimum ${min}). Answer in text instead.`);
   }
 }
 
