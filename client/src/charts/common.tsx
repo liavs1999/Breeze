@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { Group, Text } from '@mantine/core';
 import { formatValue, type Quantity, type UnitSystem } from '@wwa/shared';
 
@@ -14,9 +13,6 @@ export const COLORS = {
   aqua: 'var(--series-aqua)',
   yellow: 'var(--series-yellow)',
   violet: 'var(--series-violet)',
-  warm: 'var(--diverging-warm)',
-  cool: 'var(--diverging-cool)',
-  neutral: 'var(--diverging-neutral)',
   normal: 'var(--normal-band)',
 };
 
@@ -31,10 +27,7 @@ export const axisProps = {
 } as const;
 
 export const yAxisProps = { ...axisProps, axisLine: false, width: 44 } as const;
-export const gridProps = { stroke: 'var(--chart-grid)', vertical: false } as const;
 export const cursorProps = { stroke: 'var(--ink-muted)', strokeWidth: 1 } as const;
-export const barProps = { maxBarSize: 24, radius: [4, 4, 0, 0] as [number, number, number, number] };
-export const lineProps = { strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', isAnimationActive: false } as const;
 export const activeDot = { r: 5, stroke: 'var(--surface)', strokeWidth: 2 };
 
 // ── Time labels (local times arrive as plain strings; format them without timezone shifts) ──────
@@ -97,20 +90,6 @@ export function Key({ color, shape = 'line' }: { color: string; shape?: 'line' |
   return <span style={{ width: 10, height: 10, borderRadius: 3, background: color, display: 'inline-block', opacity: shape === 'band' ? 0.9 : 1 }} />;
 }
 
-export function Legend({ items }: { items: { label: string; color: string; shape?: 'line' | 'bar' | 'band' }[] }) {
-  return (
-    <Group gap={14} mb={6}>
-      {items.map((i) => (
-        <Group key={i.label} gap={6} wrap="nowrap">
-          <Key color={i.color} shape={i.shape} />
-          <Text size="xs" c="dimmed">
-            {i.label}
-          </Text>
-        </Group>
-      ))}
-    </Group>
-  );
-}
 
 export const display = (v: number | null | undefined, q: Quantity, units: UnitSystem) => formatValue(v, q, units);
 
@@ -134,17 +113,10 @@ export function ticksFor([min, max]: [number, number]): number[] {
   return out;
 }
 
-/** Steps of 1, 2, 3, 5 or 10 (× a power of ten): whole numbers for temperatures, as in Apple Weather. */
+/** Steps of 1, 2, 3, 5 or 10 (× a power of ten): whole-number steps for temperatures. */
 function niceStep(raw: number): number {
   const pow = 10 ** Math.floor(Math.log10(raw));
   const n = raw / pow;
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 3 ? 3 : n <= 5 ? 5 : 10) * pow;
 }
 
-export function ChartFrame({ height, label, children }: { height: number; label: string; children: ReactNode }) {
-  return (
-    <div role="img" aria-label={label} data-chart style={{ height, width: '100%' }}>
-      {children}
-    </div>
-  );
-}

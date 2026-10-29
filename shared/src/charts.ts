@@ -37,6 +37,9 @@ export const temperatureRangeChart = z.object({
       max: nullableNumber,
       normalMin: nullableNumber.optional(),
       normalMax: nullableNumber.optional(),
+      /** WMO weather code and the chance of rain (forecasts), for the day rows. */
+      code: nullableNumber.optional(),
+      rainChance: nullableNumber.optional(),
     }),
   ),
 });
@@ -64,7 +67,7 @@ export const precipitationChart = z.object({
   ...base,
   place,
   granularity: z.enum(['daily', 'hourly']),
-  points: z.array(z.object({ time: z.string(), rain: nullableNumber, snow: nullableNumber })),
+  points: z.array(z.object({ time: z.string(), rain: nullableNumber, snow: nullableNumber, code: nullableNumber.optional(), isDay: z.boolean().nullable().optional() })),
   /** Whether any snow fell in the window; when false the chart shows rain only. */
   hasSnow: z.boolean(),
 });

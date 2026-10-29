@@ -1,9 +1,10 @@
 import { useId } from 'react';
-import { Group, Text } from '@mantine/core';
+import { Text } from '@mantine/core';
 import { Area, Bar, CartesianGrid, ComposedChart, ReferenceDot, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { convert, describeWeatherCode, type ChartOf, type UnitSystem } from '@wwa/shared';
 import { weatherIcon } from '../components/weatherIcons';
 import { axisProps, COLORS, cursorProps, fullTime, paddedDomain, ticksFor, TooltipCard, yAxisProps } from './common';
+import { deg, dominantCode, Hero, hourOf, IconTick, localHour, weekdayShort as weekday } from './parts';
 import { gradientStops, temperatureColor } from './temperatureColors';
 
 interface Row {
@@ -16,7 +17,7 @@ interface Row {
 }
 
 /**
- * Hour by hour, in the style of Apple Weather: high and low up top, condition icons along the top,
+ * Hour by hour: high and low up top, condition icons along the top,
  * a temperature line colored by temperature with a matching fading fill, H and L markers, the current
  * hour marked, hours along the bottom and the scale on the right. Chance of rain sits in a slim
  * panel below (same time axis, its own scale; never a second y-axis on the same plot).
@@ -53,7 +54,6 @@ export function HourlyChart({ spec, units }: { spec: ChartOf<'hourly'>; units: U
   const maxRain = Math.max(0, ...rows.map((r) => r.rain ?? 0));
   const rainy = probability ? maxRain >= 20 : maxRain >= 0.1;
   const DayIcon = weatherIcon(dominantCode(rows), true);
-  const deg = (v: number) => `${Math.round(v)}°`;
   const label = (r: Row) => `${deg(r.temp!)} at ${fullTime(r.t)}`;
 
   const tooltip = ({ active, payload }: any) => {
@@ -72,20 +72,17 @@ export function HourlyChart({ spec, units }: { spec: ChartOf<'hourly'>; units: U
 
   return (
     <div data-chart className="hourly-chart" role="img" aria-label={`${spec.title}. High ${label(hi)}, low ${label(lo)}.`}>
-      <Group gap={10} align="center" mb={2} wrap="nowrap">
-        <Text fz={34} fw={600} lh={1} style={{ letterSpacing: '-0.02em' }}>
-          {deg(hi.temp)}
-        </Text>
-        <Text fz={34} fw={500} lh={1} c="dimmed" style={{ letterSpacing: '-0.02em' }}>
-          {deg(lo.temp)}
-        </Text>
-        <DayIcon size={30} stroke={1.5} color="var(--ink-secondary)" aria-hidden />
-        <Text size="xs" c="dimmed" ml="auto" ta="right">
-          High · low
-          <br />
-          {units === 'imperial' ? 'Fahrenheit (°F)' : 'Celsius (°C)'}
-        </Text>
-      </Group>
+      <Hero
+        values={[{ text: deg(hi.temp) }, { text: deg(lo.temp), dim: true }]}
+        icon={DayIcon}
+        caption={
+          <>
+            High · low
+            <br />
+            {units === 'imperial' ? 'Fahrenheit (°F)' : 'Celsius (°C)'}
+          </>
+        }
+      />
 
       <div style={{ height: 236 }}>
         <ResponsiveContainer>
@@ -160,41 +157,4 @@ export function HourlyChart({ spec, units }: { spec: ChartOf<'hourly'>; units: U
       )}
     </div>
   );
-}
-
-/** A condition icon above every few hours (moon at night). */
-function IconTick({ x, y, payload, byTime }: { x?: number; y?: number; payload?: { value: string }; byTime: Map<string, Row> }) {
-  const row = payload ? byTime.get(payload.value) : undefined;
-  if (x == null || y == null || !row || row.code == null) return null;
-  const Icon = weatherIcon(row.code, row.isDay);
-  return (
-    <g transform={`translate(${x - 9}, ${y - 24})`}>
-      <Icon size={18} stroke={1.6} color="var(--ink-secondary)" />
-    </g>
-  );
-}
-
-const hourOf = (t: string) => Number(t.slice(11, 13));
-const weekday = (t: string) => new Intl.DateTimeFormat('en-GB', { weekday: 'short', timeZone: 'UTC' }).format(new Date(`${t.slice(0, 10)}T00:00:00Z`));
-
-/** The current hour at the place, as the chart's local time key ("YYYY-MM-DDTHH:00"). */
-function localHour(timeZone: string): string {
-  try {
-    const p = Object.fromEntries(
-      new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23' })
-        .formatToParts(new Date())
-        .map((x) => [x.type, x.value]),
-    );
-    return `${p.year}-${p.month}-${p.day}T${p.hour}:00`;
-  } catch {
-    return '';
-  }
-}
-
-/** The condition that covers most daytime hours (all hours if there is no daytime in the window). */
-function dominantCode(rows: Row[]): number {
-  const pool = rows.filter((r) => r.code != null && r.isDay);
-  const counts = new Map<number, number>();
-  for (const r of pool.length ? pool : rows.filter((x) => x.code != null)) counts.set(r.code!, (counts.get(r.code!) ?? 0) + 1);
-  return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 3;
 }

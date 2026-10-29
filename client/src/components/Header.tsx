@@ -25,12 +25,12 @@ export function Header({ onOpenKeyPanel }: { onOpenKeyPanel: () => void }) {
   const scheme = useComputedColorScheme('light');
 
   return (
-    <header style={{ position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(10px)', background: 'color-mix(in srgb, var(--mantine-color-body) 82%, transparent)' }}>
+    <header style={{ position: 'sticky', top: 0, zIndex: 10, WebkitBackdropFilter: 'blur(20px) saturate(180%)', backdropFilter: 'blur(20px) saturate(180%)', background: 'color-mix(in srgb, var(--mantine-color-body) 55%, transparent)' }}>
       <Group className="column" justify="space-between" h={56} wrap="nowrap" gap="xs">
         <UnstyledButton onClick={goHome} aria-label="Atmos home">
           <Group gap={8} wrap="nowrap">
             <Logo />
-            <Text fw={600} size="md">
+            <Text fw={700} fz={17} style={{ letterSpacing: '-0.01em' }}>
               Atmos
             </Text>
           </Group>

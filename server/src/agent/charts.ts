@@ -52,7 +52,7 @@ function temperatureRange(ds: Dataset): ChartSpec {
   requirePoints(filled(max));
   return {
     kind: 'temperature_range',
-    title: `${ds.kind === 'forecast' ? `${ds.time.length}-day temperature outlook` : 'Daily temperatures'} · ${ds.place.name}`,
+    title: `${ds.kind === 'forecast' ? `${ds.time.length}-day forecast` : 'Daily temperatures'} · ${ds.place.name}`,
     subtitle: subtitle(ds, ds.normals ? 'gray band: 1991–2020 normal range' : undefined),
     source: source(ds, Boolean(ds.normals)),
     place: chartPlace(ds),
@@ -61,6 +61,8 @@ function temperatureRange(ds: Dataset): ChartSpec {
       min: min[i],
       max: max[i],
       ...(ds.normals ? { normalMin: ds.normals.min[i], normalMax: ds.normals.max[i] } : {}),
+      code: ds.values.weather_code[i] ?? null,
+      rainChance: ds.values.precipitation_probability[i] ?? null,
     })),
   };
 }
@@ -111,7 +113,13 @@ function precipitation(ds: Dataset): ChartSpec {
     place: chartPlace(ds),
     granularity: ds.granularity,
     hasSnow,
-    points: ds.time.map((time, i) => ({ time, rain: rain[i], snow: hasSnow ? snow[i] : 0 })),
+    points: ds.time.map((time, i) => ({
+      time,
+      rain: rain[i],
+      snow: hasSnow ? snow[i] : 0,
+      code: ds.values.weather_code[i] ?? null,
+      isDay: ds.values.is_day?.[i] == null ? null : ds.values.is_day[i] === 1,
+    })),
   };
 }
 

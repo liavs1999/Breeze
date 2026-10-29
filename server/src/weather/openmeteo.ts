@@ -103,7 +103,7 @@ const at = (p: Place) => `latitude=${p.latitude}&longitude=${p.longitude}&timezo
 
 export async function getCurrent(place: Place): Promise<CurrentWeather> {
   const current = 'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m,is_day';
-  const url = `${FORECAST}?${at(place)}&current=${current}&hourly=temperature_2m&forecast_hours=24&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=1`;
+  const url = `${FORECAST}?${at(place)}&current=${current}&hourly=temperature_2m,weather_code,is_day&forecast_hours=24&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&forecast_days=1`;
   const d = await fetchJson<any>(url, 10 * MIN);
   const c = d.current;
   return {
@@ -125,7 +125,12 @@ export async function getCurrent(place: Place): Promise<CurrentWeather> {
       max: d.daily.temperature_2m_max[0],
       precipitationChance: d.daily.precipitation_probability_max?.[0] ?? null,
     },
-    next24h: (d.hourly.time as string[]).map((time, i) => ({ time, temperature: d.hourly.temperature_2m[i] })),
+    next24h: (d.hourly.time as string[]).map((time, i) => ({
+      time,
+      temperature: d.hourly.temperature_2m[i],
+      code: d.hourly.weather_code?.[i],
+      isDay: d.hourly.is_day?.[i] === 1,
+    })),
     source: SOURCE,
   };
 }

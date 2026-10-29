@@ -133,7 +133,7 @@ greeting and four example questions, the chart ones marked. Answers stream in; t
 | Area | Libraries |
 |---|---|
 | Client | React 19, Vite 8, Mantine 9 (core, hooks, charts, notifications), `@ai-sdk/react` (`useChat` with resume), React Router, `react-markdown` + `remend` (clean half-written markdown while streaming), Tabler icons |
-| Charts | Recharts 3 for all six chart kinds (one consistent set of mark specs); Mantine's `Sparkline` in the now card |
+| Charts | Recharts 3 for all chart kinds; the day rows are plain HTML (no chart library needed) |
 | Server | Hono + `@hono/node-server`, AI SDK 7 + `@ai-sdk/google`, `groq`, `anthropic`, `openai`, zod 4 (schemas shared with the client), SQLite via `node:sqlite` (fallback `better-sqlite3`), `lru-cache` |
 | Tests | Vitest, MSW (fake Open-Meteo responses, including failures), Playwright |
 | Tooling | npm workspaces (`server`, `client`, `shared`), TypeScript, oxlint |
@@ -188,3 +188,14 @@ Decisions made while building, with the reason:
 
 Verified: 16 unit tests, 9 browser tests (reload mid-answer, dropped connection, weather failure, stop, offline,
 draft, key check), evals 17/17 with `gemini-3.6-flash` and 5/5 chart cases with `gemini-3.5-flash-lite`.
+
+## Design pass (29 Oct, evening)
+
+- **One visual language for every forecast and past-data chart**: a large summary up top, condition icons along the
+  top where they help, temperature colors on a fixed °C scale (blue → teal → green → yellow → orange → red), the
+  scale on the right, rounded bars, one tooltip, no legend boxes (tiles or direct values instead).
+- **Day rows for up to 16 days** (icon, chance of rain, low, range bar on a shared scale, high); longer periods and
+  periods with normals use one temperature-colored column per day.
+- **The "now" card is a sky card**: its gradient follows the condition and day or night; the next 12 hours below.
+- **The page follows the sky** of the place being discussed (a soft tint at the top), frosted cards and header,
+  blue user bubbles, a capsule input that glows while the agent works, shimmering "Thinking…".

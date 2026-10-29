@@ -1,77 +1,76 @@
-import { Group, SimpleGrid, Stack, Text } from '@mantine/core';
-import { Sparkline } from '@mantine/charts';
+import { Group, Stack, Text } from '@mantine/core';
+import { IconDroplet, IconTemperature, IconUmbrella, IconWind } from '@tabler/icons-react';
 import { convert, formatValue, type CurrentWeather } from '@wwa/shared';
 import { useSettings } from '../lib/settings';
+import { skyFor } from '../lib/sky';
 import { weatherIcon } from './weatherIcons';
 
-/** Current conditions: one hero number, a few facts, and the next 24 hours as a sparkline. Not a chart. */
+/**
+ * Current conditions as a sky card: the place, one large light-weight temperature, the condition and
+ * today's high and low, then a frosted panel with the next hours (time, icon, temperature) and a few
+ * facts. The card's gradient is the sky for this weather at this time of day.
+ */
 export function NowCard({ data }: { data: CurrentWeather & { stale?: boolean } }) {
   const { units } = useSettings().settings;
-  const Icon = weatherIcon(data.weatherCode, data.isDay);
-  const t = (v: number) => formatValue(v, 'temperature', units);
+  const sky = skyFor(data.weatherCode, data.isDay);
+  const t = (v: number) => `${Math.round(convert(v, 'temperature', units))}°`;
   const local = new Date(`${data.observedAt}:00Z`).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
-  const place = [data.place.name, data.place.country].filter(Boolean).join(', ');
+  const Icon = weatherIcon(data.weatherCode, data.isDay);
+  const hours = data.next24h.slice(0, 12);
 
   return (
-    <div className="card" style={{ padding: 20 }}>
-      <Group justify="space-between" align="flex-start" wrap="nowrap" gap="md">
-        <Stack gap={2}>
-          <Text size="sm" c="dimmed">
-            {place} · {local} local time
+    <div className="now-card" style={{ background: `linear-gradient(180deg, ${sky.top} 0%, ${sky.bottom} 100%)` }}>
+      <Stack align="center" gap={0}>
+        <Text fz={24} fw={500} lh={1.2} ta="center">
+          {data.place.name}
+        </Text>
+        <Text fz={13} fw={500} opacity={0.85}>
+          {[data.place.country, `${local} local time`].filter(Boolean).join(' · ')}
+        </Text>
+        <Text fz={84} fw={200} lh={1.05} mt={2} style={{ letterSpacing: '-0.03em', paddingLeft: '0.2em' }}>
+          {t(data.temperature)}
+        </Text>
+        <Group gap={6}>
+          <Icon size={20} stroke={1.8} aria-hidden />
+          <Text fz={18} fw={500}>
+            {data.condition}
           </Text>
-          <Group gap={12} align="center" wrap="nowrap">
-            <Text fz={56} fw={600} lh={1.05} style={{ letterSpacing: '-0.02em' }}>
-              {t(data.temperature)}
-            </Text>
-            <Icon size={40} stroke={1.4} color="var(--ink-secondary)" aria-hidden />
-          </Group>
-          <Text fw={500}>{data.condition}</Text>
-          <Text size="sm" c="dimmed">
-            Feels like {t(data.feelsLike)} · H {t(data.today.max)} · L {t(data.today.min)}
-          </Text>
-        </Stack>
-        <Stack gap={4} align="flex-end" style={{ minWidth: 120, flex: '0 1 200px' }} visibleFrom="xs">
-          <Sparkline
-            w="100%"
-            h={56}
-            data={data.next24h.map((p) => convert(p.temperature, 'temperature', units))}
-            color="var(--series-orange)"
-            fillOpacity={0.12}
-            strokeWidth={2}
-            curveType="monotone"
-            withGradient={false}
-            aria-label="Temperature over the next 24 hours"
-          />
-          <Text size="xs" c="dimmed">
-            Next 24 h
-          </Text>
-        </Stack>
-      </Group>
-      <SimpleGrid cols={{ base: 2, xs: 4 }} spacing="xs" mt="md">
-        <Fact label="Wind" value={`${formatValue(data.windSpeed, 'wind', units)}`} sub={`gusts ${formatValue(data.windGusts, 'wind', units)}`} />
-        <Fact label="Humidity" value={`${data.humidity}%`} />
-        <Fact label="Chance of rain" value={data.today.precipitationChance == null ? '–' : `${data.today.precipitationChance}%`} sub="today" />
-        <Fact label="Cloud cover" value={`${data.cloudCover}%`} />
-      </SimpleGrid>
+        </Group>
+        <Text fz={17} fw={500} mt={2}>
+          H:{t(data.today.max)}  L:{t(data.today.min)}
+        </Text>
+      </Stack>
+
+      <div className="now-panel" style={{ marginTop: 16 }}>
+        <Group gap={14} wrap="wrap" style={{ fontSize: 13, fontWeight: 500, opacity: 0.92 }}>
+          <Fact icon={IconTemperature} text={`Feels like ${t(data.feelsLike)}`} />
+          <Fact icon={IconWind} text={`${formatValue(data.windSpeed, 'wind', units)}, gusts ${formatValue(data.windGusts, 'wind', units)}`} />
+          <Fact icon={IconDroplet} text={`Humidity ${data.humidity}%`} />
+          <Fact icon={IconUmbrella} text={`Rain ${data.today.precipitationChance ?? 0}% today`} />
+        </Group>
+        <div style={{ height: 0.5, background: 'rgba(255,255,255,0.25)', margin: '10px 0 2px' }} />
+        <div className="hour-strip" aria-label="Next hours">
+          {hours.map((h, i) => {
+            const HourIcon = weatherIcon(h.code ?? data.weatherCode, h.isDay ?? data.isDay);
+            return (
+              <div key={h.time} className="hour-cell">
+                <span style={{ opacity: 0.9 }}>{i === 0 ? 'Now' : h.time.slice(11, 13)}</span>
+                <HourIcon size={22} stroke={1.6} aria-hidden />
+                <span style={{ fontSize: 16 }}>{t(h.temperature)}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
 
-function Fact({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Fact({ icon: FactIcon, text }: { icon: typeof IconWind; text: string }) {
   return (
-    <div style={{ background: 'var(--surface-muted)', borderRadius: 12, padding: '8px 12px' }}>
-      <Text size="xs" c="dimmed">
-        {label}
-      </Text>
-      <Text fw={600} size="sm">
-        {value}
-        {sub && (
-          <Text span size="xs" c="dimmed" fw={400}>
-            {' '}
-            {sub}
-          </Text>
-        )}
-      </Text>
-    </div>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+      <FactIcon size={15} stroke={1.8} aria-hidden />
+      {text}
+    </span>
   );
 }

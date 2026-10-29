@@ -10,6 +10,7 @@ import { checkSavedKey, markKeyProblem } from '../lib/status';
 import type { ChatMessage } from '../lib/types';
 import { read, write } from '../lib/storage';
 import { setCurrentChatEmpty } from '../lib/currentChat';
+import { skyFromMessages } from '../lib/sky';
 import { Composer } from './Composer';
 import { EmptyState } from './EmptyState';
 import { MessageView } from './MessageView';
@@ -87,6 +88,7 @@ function Conversation({ chatId, initial, onOpenKeyPanel }: { chatId: string; ini
 
   const busy = status === 'submitted' || status === 'streaming';
   const isEmpty = messages.length === 0 && !busy;
+  useEffect(() => skyFromMessages(messages), [messages]);
   useEffect(() => {
     setCurrentChatEmpty(isEmpty);
     return () => setCurrentChatEmpty(false);
@@ -125,7 +127,7 @@ function Conversation({ chatId, initial, onOpenKeyPanel }: { chatId: string; ini
         {messages.length === 0 ? (
           <EmptyState onPick={send} />
         ) : (
-          <Stack gap={28} pt="md">
+          <Stack gap={26} pt="md">
             {messages.map((m, i) => (
               <MessageView key={m.id} message={m} streaming={busy && i === messages.length - 1 && m.role === 'assistant'} />
             ))}
@@ -260,10 +262,9 @@ function hasVisibleContent(m: ChatMessage | undefined) {
 
 function Thinking() {
   return (
-    <Group gap={8} c="dimmed" className="fade-in">
-      <Loader size={14} type="dots" />
-      <Text size="sm">Thinking…</Text>
-    </Group>
+    <Text size="sm" fw={500} className="fade-in shimmer">
+      Thinking…
+    </Text>
   );
 }
 

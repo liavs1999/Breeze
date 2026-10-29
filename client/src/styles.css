@@ -1,6 +1,26 @@
-/* Page frame and the chart tokens (validated palette, see client/src/charts/palette.ts). */
+/* Design tokens, materials and the few custom components. Chart series colors are the validated
+   reference palette from the dataviz guide; text always uses the ink tokens, never series colors. */
+
+@property --sky-top {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #2f7fd8;
+}
+@property --sky-bottom {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #7db8ee;
+}
+@property --glow-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 :root {
   --app-max: 760px;
+  --radius-card: 22px;
+  transition: --sky-top 1.6s ease, --sky-bottom 1.6s ease;
 }
 
 html,
@@ -12,56 +32,73 @@ body,
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   background: var(--mantine-color-body);
+  letter-spacing: -0.005em;
 }
 
 /* :root + attribute, so these win over Mantine's own scheme variables. */
 :root[data-mantine-color-scheme='light'] {
-  --mantine-color-body: #fbfbfa;
-  --surface: #ffffff;
-  --surface-muted: #f3f3f1;
-  --hairline: rgba(11, 11, 11, 0.08);
-  --chart-grid: #e8e7e1;
-  --chart-axis: #c3c2b7;
-  --ink-primary: #0b0b0b;
-  --ink-muted: #898781;
-  --ink-secondary: #52514e;
+  --mantine-color-body: #f2f2f7;
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-solid: #ffffff;
+  --surface-muted: rgba(118, 118, 128, 0.12);
+  --hairline: rgba(60, 60, 67, 0.13);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.05);
+  --chart-grid: rgba(60, 60, 67, 0.1);
+  --chart-axis: rgba(60, 60, 67, 0.22);
+  --ink-primary: #000000;
+  --ink-secondary: rgba(60, 60, 67, 0.82);
+  --ink-muted: rgba(60, 60, 67, 0.56);
+  --accent: #007aff;
+  --aura-opacity: 0.32;
   --series-blue: #2a78d6;
   --series-orange: #eb6834;
   --series-aqua: #1baf7a;
   --series-yellow: #eda100;
   --series-violet: #4a3aa7;
-  --diverging-warm: #e34948;
-  --diverging-cool: #2a78d6;
-  --diverging-neutral: #d9d8d3;
-  --normal-band: rgba(82, 81, 78, 0.12);
+  --normal-band: rgba(60, 60, 67, 0.12);
 }
 
 :root[data-mantine-color-scheme='dark'] {
-  --mantine-color-body: #141517;
-  --surface: #1b1c1e;
-  --surface-muted: #232427;
-  --hairline: rgba(255, 255, 255, 0.08);
-  --chart-grid: #2c2c2a;
-  --chart-axis: #383835;
+  --mantine-color-body: #000000;
+  --surface: rgba(28, 28, 30, 0.74);
+  --surface-solid: #1c1c1e;
+  --surface-muted: rgba(118, 118, 128, 0.24);
+  --hairline: rgba(84, 84, 88, 0.5);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.35);
+  --chart-grid: rgba(84, 84, 88, 0.45);
+  --chart-axis: rgba(84, 84, 88, 0.75);
   --ink-primary: #ffffff;
-  --ink-muted: #898781;
-  --ink-secondary: #c3c2b7;
+  --ink-secondary: rgba(235, 235, 245, 0.78);
+  --ink-muted: rgba(235, 235, 245, 0.55);
+  --accent: #0a84ff;
+  --aura-opacity: 0.55;
   --series-blue: #3987e5;
   --series-orange: #d95926;
   --series-aqua: #199e70;
   --series-yellow: #c98500;
   --series-violet: #9085e9;
-  --diverging-warm: #e66767;
-  --diverging-cool: #3987e5;
-  --diverging-neutral: #4a4a46;
-  --normal-band: rgba(195, 194, 183, 0.14);
+  --normal-band: rgba(235, 235, 245, 0.12);
 }
 
 .app {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  isolation: isolate;
+}
+
+/* The sky of the place being discussed, tinting the top of the page. */
+.sky-aura {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 75vh;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 38%, transparent 100%);
+  opacity: var(--aura-opacity);
 }
 
 .column {
@@ -72,16 +109,61 @@ body {
   box-sizing: border-box;
 }
 
+/* Frosted material for cards, menus and the composer. */
 .card {
   background: var(--surface);
-  border: 1px solid var(--hairline);
-  border-radius: 16px;
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 0.5px solid var(--hairline);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
 }
 
-/* Markdown inside answers */
+.card-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.pill-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-secondary);
+  background: var(--surface-muted);
+  flex-shrink: 0;
+}
+.pill-button:hover {
+  color: var(--ink-primary);
+}
+
+/* ── Messages ─────────────────────────────────────────────────────────────────────────────── */
+
+.bubble-user {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 20px 20px 6px 20px;
+  padding: 9px 15px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  font-size: 16px;
+}
+
+.answer {
+  font-size: 16px;
+}
 .answer p {
   margin: 0 0 0.6em;
-  line-height: 1.6;
+  line-height: 1.55;
 }
 .answer p:last-child {
   margin-bottom: 0;
@@ -89,17 +171,186 @@ body {
 .answer ul,
 .answer ol {
   margin: 0.2em 0 0.6em;
-  padding-left: 1.3em;
-  line-height: 1.6;
+  padding-left: 1.2em;
+  line-height: 1.55;
 }
 .answer li + li {
-  margin-top: 0.15em;
+  margin-top: 0.2em;
 }
 .answer strong {
   font-weight: 600;
 }
 .answer a {
-  color: var(--mantine-color-sky-6);
+  color: var(--accent);
+}
+
+.shimmer {
+  background: linear-gradient(90deg, var(--ink-muted) 20%, var(--ink-primary) 50%, var(--ink-muted) 80%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.8s linear infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+/* ── Composer: a frosted capsule that glows while the agent is working ───────────────────────── */
+
+.composer {
+  position: relative;
+  border-radius: 28px;
+}
+.composer::before,
+.composer::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+  background: conic-gradient(from var(--glow-angle), #ff9f0a, #ff375f, #bf5af2, #5e5ce6, #0a84ff, #64d2ff, #ff9f0a);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  animation: glow-spin 4s linear infinite;
+}
+/* A crisp gradient ring… */
+.composer::before {
+  inset: -1.5px;
+  padding: 1.5px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  z-index: 1;
+}
+/* …and a soft glow behind it. */
+.composer::after {
+  inset: -7px;
+  filter: blur(16px);
+  z-index: -1;
+}
+.composer[data-busy='true']::before {
+  opacity: 1;
+}
+.composer[data-busy='true']::after {
+  opacity: 0.5;
+}
+@keyframes glow-spin {
+  to {
+    --glow-angle: 360deg;
+  }
+}
+
+/* ── Now card ─────────────────────────────────────────────────────────────────────────────── */
+
+.now-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 26px;
+  color: #fff;
+  padding: 22px 18px 16px;
+  box-shadow: var(--shadow);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.12);
+}
+.now-panel {
+  background: rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 0.5px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  padding: 10px 12px;
+}
+.hour-strip {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-top: 8px;
+}
+.hour-strip::-webkit-scrollbar {
+  display: none;
+}
+.hour-cell {
+  flex: 0 0 auto;
+  min-width: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* ── Day rows (multi-day forecast) ────────────────────────────────────────────────────────── */
+
+.day-row {
+  display: grid;
+  grid-template-columns: 76px 44px 44px 1fr 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 2px;
+  border-top: 0.5px solid var(--hairline);
+}
+.day-row:first-child {
+  border-top: 0;
+}
+.day-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  color: var(--ink-secondary);
+}
+.rain-chance {
+  font-size: 11px;
+  font-weight: 700;
+  color: #5ac8fa;
+  line-height: 1;
+}
+.range-track {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-muted);
+}
+.range-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+}
+
+/* ── Small pieces ─────────────────────────────────────────────────────────────────────────── */
+
+.tile {
+  background: var(--surface-muted);
+  border-radius: 14px;
+  padding: 8px 12px;
+  min-width: 0;
+}
+
+.scale-dot {
+  position: absolute;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2.5px solid var(--ink-primary);
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+}
+
+.example {
+  transition: transform 160ms ease, background-color 160ms ease;
+}
+.example:hover {
+  transform: translateY(-1px);
+  background: var(--surface-solid);
 }
 
 /* Recharts: tabular axis numbers, no focus outline on the svg */
@@ -113,14 +364,15 @@ body {
 
 /* Hourly chart: the plot runs edge to edge, so the first and last condition icons (centred on their
    hour) draw into the card's margin instead of being clipped by the chart's own bounds. */
-.hourly-chart .recharts-surface {
+.hourly-chart .recharts-surface,
+.chart-card .recharts-surface {
   overflow: visible;
 }
 
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(6px) scale(0.995);
   }
   to {
     opacity: 1;
@@ -128,19 +380,14 @@ body {
   }
 }
 .fade-in {
-  animation: fade-in 220ms ease-out both;
+  animation: fade-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fade-in {
+  .fade-in,
+  .shimmer,
+  .composer::before,
+  .composer::after {
     animation: none;
   }
-}
-
-.example {
-  transition: border-color 120ms ease, background-color 120ms ease;
-}
-.example:hover {
-  border-color: var(--mantine-color-sky-light-color);
-  background: var(--surface-muted);
 }

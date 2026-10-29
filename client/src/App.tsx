@@ -18,6 +18,7 @@ export function App() {
 
   return (
     <div className="app">
+      <div className="sky-aura" aria-hidden />
       <Header onOpenKeyPanel={() => setKeyPanelOpen(true)} />
       <Routes>
         <Route path="/" element={<NewChat />} />

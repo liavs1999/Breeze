@@ -14,10 +14,8 @@ export function MessageView({ message, streaming }: { message: ChatMessage; stre
   if (message.role === 'user') {
     const text = message.parts.map((p) => (p.type === 'text' ? p.text : '')).join('');
     return (
-      <Box className="fade-in" style={{ alignSelf: 'flex-end', maxWidth: '85%' }}>
-        <Text px={14} py={9} style={{ background: 'var(--surface-muted)', borderRadius: 18, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
-          {text}
-        </Text>
+      <Box className="fade-in" style={{ alignSelf: 'flex-end', maxWidth: '82%' }}>
+        <div className="bubble-user">{text}</div>
       </Box>
     );
   }

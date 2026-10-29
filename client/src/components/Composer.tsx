@@ -20,9 +20,10 @@ export function Composer({ chatId, busy, onSend, onStop }: { chatId: string; bus
   };
 
   return (
-    <div style={{ position: 'sticky', bottom: 0, paddingBottom: 'max(12px, env(safe-area-inset-bottom))', background: 'linear-gradient(to top, var(--mantine-color-body) 70%, transparent)' }}>
+    <div style={{ position: 'sticky', bottom: 0, paddingBottom: 'max(12px, env(safe-area-inset-bottom))', background: 'linear-gradient(to top, var(--mantine-color-body) 55%, transparent)', paddingTop: 18 }}>
       <div className="column">
-        <Paper className="card" p={6} pl={14} shadow="xs">
+        <div className="composer" data-busy={busy}>
+        <Paper className="card" p={6} pl={16} style={{ borderRadius: 28 }}>
           <Group gap={6} align="flex-end" wrap="nowrap">
             <Textarea
               ref={ref}
@@ -40,13 +41,13 @@ export function Composer({ chatId, busy, onSend, onStop }: { chatId: string; bus
               maxRows={6}
               variant="unstyled"
               style={{ flex: 1 }}
-              styles={{ input: { fontSize: 15, paddingTop: 7, paddingBottom: 7 } }}
+              styles={{ input: { fontSize: 16, paddingTop: 7, paddingBottom: 7 } }}
               aria-label="Message"
               maxLength={2000}
             />
             {busy ? (
               <Tooltip label="Stop">
-                <ActionIcon size={36} radius="xl" variant="filled" color="dark" onClick={onStop} aria-label="Stop the answer">
+                <ActionIcon size={36} radius="xl" variant="filled" color="gray" onClick={onStop} aria-label="Stop the answer">
                   <IconPlayerStopFilled size={14} />
                 </ActionIcon>
               </Tooltip>
@@ -57,6 +58,7 @@ export function Composer({ chatId, busy, onSend, onStop }: { chatId: string; bus
             )}
           </Group>
         </Paper>
+        </div>
         <Text size="xs" c="dimmed" ta="center" mt={6}>
           Weather data by{' '}
           <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>

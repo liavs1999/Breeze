@@ -27,13 +27,15 @@ writes a number on a chart.
 
 | Ask… | You get |
 |---|---|
-| about 3 or more days: *"What will the weather be like in Tokyo this week?"* | temperature range (daily lows and highs) |
-| about the next hours or a day: *"Will it rain in London in the next 24 hours?"*, *"Tomorrow hour by hour in Tel Aviv"* | hourly, Apple Weather style: high and low, condition icons, a line colored by temperature with H and L marked, chance of rain below |
-| about rain or snow amounts: *"How much rain fell in Mumbai in the last two weeks?"* | precipitation columns |
-| to compare 2–4 places: *"Compare Paris, Rome and Madrid over the next 5 days"* | one line per place |
-| whether it was unusual: *"Was last month warmer than normal in New York?"* | bars above/below the 1991–2020 normal |
-| about air quality: *"How's the air quality in Delhi over the next few days?"* | AQI bars against the official bands |
-| for a chart explicitly: *"Give me a chart of the temperature in Cairo for the next 10 days"* | the fitting chart |
+| about 3 or more days: *"What will the weather be like in Tokyo this week?"* | day rows: icon, chance of rain, low, a temperature-colored range bar, high |
+| about the next hours or a day: *"Will it rain in London in the next 24 hours?"*, *"Tomorrow hour by hour in Tel Aviv"* | hour by hour: high and low, condition icons, a line colored by temperature with H and L, chance of rain |
+| about rain or snow amounts: *"How much rain fell in Mumbai in the last two weeks?"* | the total, condition icons, columns that deepen with heavier rain |
+| to compare 2–4 places: *"Compare Paris, Rome and Madrid over the next 5 days"* | a tile per place with its headline value, one line per place |
+| whether it was unusual: *"Was last month warmer than normal in New York?"* | the average difference from the 1991–2020 normal, warm and cool bars |
+| about air quality: *"How's the air quality in Delhi over the next few days?"* | the peak and its level, the color scale, bars colored by level |
+| about a longer past period: *"Daily temperatures in Berlin during August"* | one temperature-colored column per day, low to high |
+
+Every chart has a **Data** toggle with the same values as a table.
 
 **No chart** for a single value or "right now" (*"What's the temperature in Reykjavík right now?"* shows a compact
 "now" card instead), for three or fewer data points, for follow-ups that bring no new data (*"…in Fahrenheit?"*),
@@ -62,6 +64,10 @@ was drawn, the next step's instructions restate the rule (`prepareStep`), which 
 Guardrails: a step cap, timeouts, an explicit stop, a per-visitor limit on the server key, and fallback models when
 the provider is rate-limited (a model that reports a spent quota is skipped until its reset). Every step is logged
 (tools, tokens, model) and each answer shows which model answered and how long it took.
+
+**Look and feel.** System font, frosted cards, and a sky that follows the weather: the top of the page and the
+"now" card take the gradient of the current conditions and time of day at the place being discussed. Temperature
+colors are on a fixed scale, so a color always means the same temperature. The input glows while the agent works.
 
 **Streaming and resilience.**
 

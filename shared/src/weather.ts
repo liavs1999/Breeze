@@ -29,8 +29,8 @@ export const currentWeatherSchema = z.object({
   condition: z.string(),
   isDay: z.boolean(),
   today: z.object({ min: z.number(), max: z.number(), precipitationChance: z.number().nullable() }),
-  /** Temperature for the next 24 hours, for the sparkline. */
-  next24h: z.array(z.object({ time: z.string(), temperature: z.number() })),
+  /** The next 24 hours: temperature, condition and day/night, for the hourly strip. */
+  next24h: z.array(z.object({ time: z.string(), temperature: z.number(), code: z.number().optional(), isDay: z.boolean().optional() })),
   source: z.string(),
 });
 export type CurrentWeather = z.infer<typeof currentWeatherSchema>;

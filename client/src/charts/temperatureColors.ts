@@ -1,5 +1,5 @@
 /**
- * Temperature → color on a fixed °C scale (as in Apple Weather), so the same color means the same
+ * Temperature → color on a fixed °C scale, so the same color means the same
  * temperature in every chart and every place. The color is redundant with the line's height (the
  * position carries the value; tooltip and table carry the numbers), so it adds meaning, not data.
  */

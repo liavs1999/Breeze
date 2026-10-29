@@ -20,7 +20,7 @@ const saved = (page: Page) => page.request.get(`/api/chats/${chatId(page)}`).the
 test('a multi-day question streams an answer with a chart', async ({ page }) => {
   await page.goto('/');
   await page.getByText('What will the weather be like in Tokyo this week?').click();
-  await expect(page.getByRole('img', { name: /temperature outlook/i })).toBeVisible();
+  await expect(page.getByRole('img', { name: /day forecast/i })).toBeVisible();
   await expect(page.locator('.answer')).toContainText(END);
   await expect(page.getByText(/scripted · \d/)).toBeVisible(); // which model answered, and how long it took
 });
@@ -33,7 +33,7 @@ test('reloading mid-answer reattaches and finishes the answer exactly once', asy
 
   await expect(page.locator('.answer')).toContainText(END);
   await expect(page.locator('.answer')).toHaveCount(1);
-  await expect(page.getByRole('img', { name: /temperature outlook/i })).toHaveCount(1);
+  await expect(page.getByRole('img', { name: /day forecast/i })).toHaveCount(1);
   const chat = await saved(page);
   expect(chat.messages.map((m: any) => m.role)).toEqual(['user', 'assistant']);
 });
@@ -111,7 +111,7 @@ test('the logo always opens a fresh home page, even after chatting', async ({ pa
   }
 });
 
-test('an hour-by-hour question draws the Apple-style hourly chart', async ({ page }) => {
+test('an hour-by-hour question draws the hour-by-hour chart', async ({ page }) => {
   await page.goto('/');
   await ask(page, 'Show me tomorrow hour by hour in Athens');
   const chart = page.getByRole('img', { name: /hour by hour/i });
