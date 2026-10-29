@@ -44,11 +44,11 @@ export function readJson<T>(key: string, fallback: T, kind: 'local' | 'session' 
  * only the chats started with it. In a private window it lasts as long as the tab.
  */
 export function clientId(): string {
-  let id = read('atmos:client');
+  let id = read('breeze:client');
   if (!id) {
     const bytes = crypto.getRandomValues(new Uint8Array(18));
     id = btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    write('atmos:client', id);
+    write('breeze:client', id);
   }
   return id;
 }

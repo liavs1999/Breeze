@@ -7,7 +7,7 @@ import { defineConfig } from '@playwright/test';
  * scripted model (no key, deterministic, slow enough to reload mid-answer) and real weather data.
  */
 const PORT = 8799;
-const db = join(tmpdir(), `atmos-e2e-${Date.now()}.db`);
+const db = join(tmpdir(), `breeze-e2e-${Date.now()}.db`);
 
 export default defineConfig({
   testDir: 'e2e',

@@ -10,7 +10,7 @@ async function ask(page: Page, text: string) {
 
 async function withFaults(page: Page, faults: string[]) {
   await page.addInitScript((f) => {
-    localStorage.setItem('atmos:settings', JSON.stringify({ units: 'metric', provider: 'google', model: '', remember: true, faults: f }));
+    localStorage.setItem('breeze:settings', JSON.stringify({ units: 'metric', provider: 'google', model: '', remember: true, faults: f }));
   }, faults);
 }
 
@@ -105,7 +105,7 @@ test('the logo always opens a fresh home page, even after chatting', async ({ pa
     const before = chatId(page);
     await ask(page, 'What will the weather be like in Rome this week?');
     await expect(page.locator('.answer')).toContainText(END);
-    await page.getByRole('button', { name: 'Atmos home' }).click();
+    await page.getByRole('button', { name: 'Breeze home' }).click();
     await expect(page.getByText('Weather, anywhere')).toBeVisible();
     expect(chatId(page)).not.toBe(before);
   }
@@ -126,7 +126,7 @@ test('on an empty chat, the logo and "+" stay put instead of opening another one
   await page.goto('/');
   await expect(page.getByText('Weather, anywhere')).toBeVisible();
   const before = chatId(page);
-  await page.getByRole('button', { name: 'Atmos home' }).click();
+  await page.getByRole('button', { name: 'Breeze home' }).click();
   await page.getByRole('button', { name: 'New chat' }).click();
   await expect(page.getByLabel('Message')).toBeFocused();
   expect(chatId(page)).toBe(before);
@@ -177,7 +177,7 @@ test('a chat opened from someone else’s link is read-only and can be continued
   await expect(other.locator('.answer')).toContainText(END);
   await expect(other.getByLabel('Message')).toHaveCount(0);
   // Not in the other visitor's recent chats.
-  expect(await other.evaluate(() => fetch('/api/chats', { headers: { 'x-atmos-client': localStorage.getItem('atmos:client') ?? '' } }).then((r) => r.json()))).toEqual([]);
+  expect(await other.evaluate(() => fetch('/api/chats', { headers: { 'x-breeze-client': localStorage.getItem('breeze:client') ?? '' } }).then((r) => r.json()))).toEqual([]);
 
   await other.getByRole('button', { name: 'Continue as my chat' }).click();
   await expect(other.getByLabel('Message')).toBeVisible();

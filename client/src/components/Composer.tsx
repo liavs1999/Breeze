@@ -9,7 +9,7 @@ import { read, write } from '../lib/storage';
  * The microphone dictates into the input.
  */
 export function Composer({ chatId, busy, onSend, onStop }: { chatId: string; busy: boolean; onSend: (text: string) => void; onStop: () => void }) {
-  const draftKey = `atmos:draft:${chatId}`;
+  const draftKey = `breeze:draft:${chatId}`;
   const [text, setText] = useState(() => read(draftKey) ?? '');
   const [notice, setNotice] = useState<string | null>(null);
   const ref = useRef<HTMLTextAreaElement>(null);

@@ -10,7 +10,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-process.env.DB_PATH = join(mkdtempSync(join(tmpdir(), 'atmos-evals-')), 'evals.db');
+process.env.DB_PATH = join(mkdtempSync(join(tmpdir(), 'breeze-evals-')), 'evals.db');
 
 const { config, SERVER_ROOT } = await import('../config');
 const { startAnswer } = await import('../agent/run');

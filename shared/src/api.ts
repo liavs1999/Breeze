@@ -67,7 +67,7 @@ export interface Health {
  * An anonymous id this browser makes up and keeps, so each visitor sees and deletes only their own
  * chats. It is not a secret account: a chat link still opens for anyone, read-only.
  */
-export const CLIENT_HEADER = 'x-atmos-client';
+export const CLIENT_HEADER = 'x-breeze-client';
 export const clientIdSchema = z.string().regex(/^[A-Za-z0-9_-]{16,64}$/);
 
 export interface ChatSummary {

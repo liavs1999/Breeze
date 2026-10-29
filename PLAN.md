@@ -223,3 +223,8 @@ Seen but left: a written answer stays in the units it was written in when °C/°
 Hebrew text is laid out left to right; the agent does not answer sunrise and sunset (the data is fetched for the
 now card's request but not passed on); beyond 16 days the agent says no forecast exists instead of describing a
 typical year.
+
+## Delivery (30 Oct)
+
+Renamed to Breeze. Delivered as a public repo that runs locally (npm or Docker); no hosted demo. The agent now gets
+the user's local date and time, so "tomorrow" follows their calendar rather than UTC.

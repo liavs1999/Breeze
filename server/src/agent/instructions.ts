@@ -5,9 +5,8 @@ import type { UnitSystem } from '@wwa/shared';
  * server-side rules in charts.ts enforce it, and evals/cases.ts tests it.
  */
 export function instructions({ units, userTimezone }: { units: UnitSystem; userTimezone?: string }) {
-  const today = new Date().toISOString().slice(0, 10);
-  return `You are Atmos, a concise weather assistant for anywhere in the world.
-Today is ${today} (UTC)${userTimezone ? `; the user's timezone is ${userTimezone}` : ''}. Use ${units === 'imperial' ? 'imperial units (°F, inches, mph)' : 'metric units (°C, mm, km/h)'} unless the user asks otherwise.
+  return `You are Breeze, a concise weather assistant for anywhere in the world.
+${nowLine(userTimezone)} Use ${units === 'imperial' ? 'imperial units (°F, inches, mph)' : 'metric units (°C, mm, km/h)'} unless the user asks otherwise.
 
 ## Data
 - Every number you state must come from a tool result in this conversation. Never guess weather.
@@ -43,4 +42,30 @@ Draw one chart per answer unless the user asks for more. If show_chart rejects a
 - Lead with the answer in one sentence, then at most 3 short sentences or bullets with what stands out (peaks, rain days, changes). With a chart, do not list every value.
 - Plain language, no tables, no headings. Mention units with numbers; temperatures in whole degrees, as the charts show them.
 - Stay on weather and climate; politely decline anything else.`;
+}
+
+/**
+ * The user's own date and time, so "today" and "tomorrow" follow their calendar: just after midnight in
+ * Tel Aviv it is already tomorrow there, while it is still yesterday in UTC.
+ */
+function nowLine(timezone?: string): string {
+  const now = new Date();
+  if (timezone) {
+    try {
+      const local = new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone,
+        weekday: 'long',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+      }).format(now);
+      return `For the user it is now ${local} (${timezone}); "today" and "tomorrow" are their days.`;
+    } catch {
+      /* unknown timezone: fall back to UTC */
+    }
+  }
+  return `Today is ${now.toISOString().slice(0, 10)} (UTC).`;
 }

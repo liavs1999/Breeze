@@ -159,9 +159,9 @@ function Conversation({ chatId, initial, onOpenKeyPanel }: { chatId: string; ini
 function useTabTitle(messages: ChatMessage[]) {
   const first = messages.find((m) => m.role === 'user')?.parts.find((p) => p.type === 'text')?.text.trim();
   useEffect(() => {
-    document.title = first ? `${first.length > 50 ? `${first.slice(0, 48)}…` : first} · Atmos` : 'Atmos · weather chat';
+    document.title = first ? `${first.length > 50 ? `${first.slice(0, 48)}…` : first} · Breeze` : 'Breeze · weather chat';
     return () => {
-      document.title = 'Atmos · weather chat';
+      document.title = 'Breeze · weather chat';
     };
   }, [first]);
 }
@@ -256,11 +256,11 @@ function useScrollMemory(chatId: string, count: number) {
   const follow = useRef(true);
 
   useEffect(() => {
-    const saved = Number(read(`atmos:scroll:${chatId}`, 'session'));
+    const saved = Number(read(`breeze:scroll:${chatId}`, 'session'));
     requestAnimationFrame(() => window.scrollTo({ top: Number.isFinite(saved) && saved > 0 ? saved : document.documentElement.scrollHeight }));
     const onScroll = () => {
       follow.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 80;
-      write(`atmos:scroll:${chatId}`, String(Math.round(window.scrollY)), 'session');
+      write(`breeze:scroll:${chatId}`, String(Math.round(window.scrollY)), 'session');
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     // Growth that is not a scroll (streamed text, a chart appearing): keep following.

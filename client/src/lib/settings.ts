@@ -14,8 +14,8 @@ export interface Settings {
   faults: Fault[];
 }
 
-const SETTINGS_KEY = 'atmos:settings';
-const KEY_KEY = 'atmos:key';
+const SETTINGS_KEY = 'breeze:settings';
+const KEY_KEY = 'breeze:key';
 
 const defaults: Settings = {
   units: guessUnits(),
