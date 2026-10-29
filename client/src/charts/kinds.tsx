@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Area, Bar, CartesianGrid, ComposedChart, Line, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { AQI_BANDS, aqiLabel, convert, type ChartOf, type ChartSpec, type CompareMetric, type Quantity, type UnitSystem } from '@wwa/shared';
+import { AQI_BANDS, aqiLabel, convert, describeWeatherCode, type ChartOf, type ChartSpec, type CompareMetric, type Quantity, type UnitSystem } from '@wwa/shared';
 import {
   activeDot,
   axisProps,
@@ -21,6 +21,7 @@ import {
   yAxisProps,
   type TooltipRow,
 } from './common';
+import { HourlyChart } from './HourlyChart';
 
 export interface RenderedChart {
   legend?: { label: string; color: string; shape?: 'line' | 'bar' | 'band' }[];
@@ -115,62 +116,23 @@ function temperatureRange(spec: ChartOf<'temperature_range'>, units: UnitSystem)
   };
 }
 
-// ── Hourly: temperature line above rain bars; two panels, one shared time axis (never two y-axes) ──
+// ── Hourly: Apple Weather style (see HourlyChart) ────────────────────────────────────────────────
 
 function hourly(spec: ChartOf<'hourly'>, units: UnitSystem): RenderedChart {
   const probability = spec.rainMeasure === 'probability';
-  const data = spec.hours.map((h) => ({ t: h.time, temp: c(h.temperature, 'temperature', units), rain: probability ? h.rain : c(h.rain, 'precipitation', units) }));
-  const tempDomain = paddedDomain(data.map((d) => d.temp));
   const rainLabel = probability ? 'Chance of rain' : 'Rain';
-  const rainValue = (v: number | null) => (v == null ? '–' : probability ? `${v}%` : display(v, 'precipitation', 'metric').replace('mm', units === 'imperial' ? 'in' : 'mm'));
-  const tempValue = (v: number | null) => converted(v, units);
-  const tip = ({ active, payload }: any) => {
-    const d = active && payload?.[0]?.payload;
-    if (!d) return null;
-    return (
-      <TooltipCard
-        title={fullTime(d.t)}
-        rows={[
-          { label: 'Temperature', color: COLORS.orange, value: tempValue(d.temp) },
-          { label: rainLabel, color: COLORS.blue, shape: 'bar', value: rainValue(d.rain) },
-        ]}
-      />
-    );
-  };
-  const interval = Math.max(0, Math.round(data.length / 8) - 1);
-
   return {
-    legend: [
-      { label: 'Temperature', color: COLORS.orange },
-      { label: rainLabel, color: COLORS.blue, shape: 'bar' },
-    ],
     label: `${spec.title}. Hourly temperature and ${rainLabel.toLowerCase()}.`,
     table: {
-      columns: ['Time', 'Temperature', rainLabel],
-      rows: spec.hours.map((h) => [fullTime(h.time), display(h.temperature, 'temperature', units), probability ? `${h.rain ?? '–'}%` : display(h.rain, 'precipitation', units)]),
+      columns: ['Time', 'Conditions', 'Temperature', rainLabel],
+      rows: spec.hours.map((h) => [
+        fullTime(h.time),
+        h.code == null ? '–' : describeWeatherCode(h.code),
+        display(h.temperature, 'temperature', units),
+        probability ? `${h.rain ?? '–'}%` : display(h.rain, 'precipitation', units),
+      ]),
     },
-    body: (
-      <ChartFrame height={290} label={spec.title}>
-        <ResponsiveContainer height={180}>
-          <ComposedChart data={data} margin={margin} syncId={`hourly-${spec.title}`}>
-            <CartesianGrid {...gridProps} />
-            <XAxis dataKey="t" hide />
-            <YAxis {...yAxisProps} domain={tempDomain} ticks={ticksFor(tempDomain)} tickFormatter={(v) => `${v}°`} />
-            <Tooltip cursor={cursorProps} content={tip} />
-            <Area dataKey="temp" type="monotone" stroke={COLORS.orange} fill={COLORS.orange} fillOpacity={0.1} {...lineProps} activeDot={activeDot} baseValue="dataMin" />
-          </ComposedChart>
-        </ResponsiveContainer>
-        <ResponsiveContainer height={110}>
-          <ComposedChart data={data} margin={{ ...margin, top: 4 }} syncId={`hourly-${spec.title}`}>
-            <CartesianGrid {...gridProps} />
-            <XAxis dataKey="t" {...axisProps} tickFormatter={hourTick} interval={interval} />
-            <YAxis {...yAxisProps} domain={probability ? [0, 100] : [0, 'auto']} ticks={probability ? [0, 50, 100] : undefined} tickFormatter={(v) => (probability ? `${v}%` : `${v}`)} />
-            <Tooltip cursor={{ fill: 'var(--surface-muted)' }} content={tip} />
-            <Bar dataKey="rain" fill={COLORS.blue} {...barProps} maxBarSize={12} radius={[3, 3, 0, 0]} isAnimationActive={false} />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </ChartFrame>
-    ),
+    body: <HourlyChart spec={spec} units={units} />,
   };
 }
 

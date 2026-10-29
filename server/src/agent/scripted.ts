@@ -53,11 +53,16 @@ function nextStep(prompt: LanguageModelV4Prompt): Plan {
 
   if (!last) {
     if (/\bnow\b/i.test(userText)) return { type: 'tool', tool: 'get_current', input: { place } };
+    if (/hour by hour/i.test(userText)) {
+      const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+      return { type: 'tool', tool: 'get_forecast', input: { place, granularity: 'hourly', date: tomorrow } };
+    }
     return { type: 'tool', tool: 'get_forecast', input: { place, granularity: 'daily', days: 7 } };
   }
   const output = last.output?.value ?? {};
   if (last.toolName === 'get_forecast' && output.dataset_id) {
-    return { type: 'tool', tool: 'show_chart', input: { kind: 'temperature_range', dataset_ids: [output.dataset_id] } };
+    const kind = output.summary?.hours ? 'hourly' : 'temperature_range';
+    return { type: 'tool', tool: 'show_chart', input: { kind, dataset_ids: [output.dataset_id] } };
   }
   if (last.output?.type?.startsWith('error')) {
     return { type: 'text', text: 'The weather service is not responding right now, so I cannot get that forecast. Please try again in a minute.' };

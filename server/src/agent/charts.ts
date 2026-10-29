@@ -78,7 +78,13 @@ function hourly(ds: Dataset): ChartSpec {
     source: source(ds),
     place: chartPlace(ds),
     rainMeasure: probability ? 'probability' : 'amount',
-    hours: ds.time.map((time, i) => ({ time, temperature: ds.values.temperature[i], rain: rain[i] })),
+    hours: ds.time.map((time, i) => ({
+      time,
+      temperature: ds.values.temperature[i],
+      rain: rain[i],
+      code: ds.values.weather_code[i] ?? null,
+      isDay: ds.values.is_day?.[i] == null ? null : ds.values.is_day[i] === 1,
+    })),
   };
 }
 

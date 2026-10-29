@@ -52,6 +52,9 @@ export const hourlyChart = z.object({
       time: z.string(),
       temperature: nullableNumber,
       rain: nullableNumber,
+      /** WMO weather code and day/night, for the icon row (optional: older saved charts lack them). */
+      code: nullableNumber.optional(),
+      isDay: z.boolean().nullable().optional(),
     }),
   ),
 });

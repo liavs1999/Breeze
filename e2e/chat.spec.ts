@@ -110,3 +110,14 @@ test('the logo always opens a fresh home page, even after chatting', async ({ pa
     expect(chatId(page)).not.toBe(before);
   }
 });
+
+test('an hour-by-hour question draws the Apple-style hourly chart', async ({ page }) => {
+  await page.goto('/');
+  await ask(page, 'Show me tomorrow hour by hour in Athens');
+  const chart = page.getByRole('img', { name: /hour by hour/i });
+  await expect(chart).toBeVisible();
+  await expect(chart).toHaveAttribute('aria-label', /High .*low /);
+  await expect(chart.locator('text', { hasText: /^H$/ })).toHaveCount(1); // the H marker
+  await expect(chart.locator('linearGradient')).toHaveCount(2); // temperature-colored line and fill
+  await expect(page.locator('.answer')).toContainText(END);
+});

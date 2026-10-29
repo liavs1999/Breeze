@@ -134,10 +134,11 @@ export function ticksFor([min, max]: [number, number]): number[] {
   return out;
 }
 
+/** Steps of 1, 2, 3, 5 or 10 (× a power of ten): whole numbers for temperatures, as in Apple Weather. */
 function niceStep(raw: number): number {
   const pow = 10 ** Math.floor(Math.log10(raw));
   const n = raw / pow;
-  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * pow;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 3 ? 3 : n <= 5 ? 5 : 10) * pow;
 }
 
 export function ChartFrame({ height, label, children }: { height: number; label: string; children: ReactNode }) {

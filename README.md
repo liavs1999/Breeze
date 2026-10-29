@@ -28,7 +28,7 @@ writes a number on a chart.
 | Ask… | You get |
 |---|---|
 | about 3 or more days: *"What will the weather be like in Tokyo this week?"* | temperature range (daily lows and highs) |
-| about the next hours: *"Will it rain in London in the next 24 hours?"* | hourly: temperature, with chance of rain below |
+| about the next hours or a day: *"Will it rain in London in the next 24 hours?"*, *"Tomorrow hour by hour in Tel Aviv"* | hourly, Apple Weather style: high and low, condition icons, a line colored by temperature with H and L marked, chance of rain below |
 | about rain or snow amounts: *"How much rain fell in Mumbai in the last two weeks?"* | precipitation columns |
 | to compare 2–4 places: *"Compare Paris, Rome and Madrid over the next 5 days"* | one line per place |
 | whether it was unusual: *"Was last month warmer than normal in New York?"* | bars above/below the 1991–2020 normal |

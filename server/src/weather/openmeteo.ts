@@ -134,8 +134,8 @@ export async function getCurrent(place: Place): Promise<CurrentWeather> {
 
 const DAILY_VARS = 'temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_probability_max,wind_speed_10m_max,weather_code';
 const HISTORY_DAILY_VARS = 'temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,rain_sum,snowfall_sum,wind_speed_10m_max,weather_code';
-const HOURLY_VARS = 'temperature_2m,precipitation_probability,precipitation,rain,showers,snowfall,wind_speed_10m,weather_code';
-const HISTORY_HOURLY_VARS = 'temperature_2m,precipitation,rain,snowfall,wind_speed_10m,weather_code';
+const HOURLY_VARS = 'temperature_2m,precipitation_probability,precipitation,rain,showers,snowfall,wind_speed_10m,weather_code,is_day';
+const HISTORY_HOURLY_VARS = 'temperature_2m,precipitation,rain,snowfall,wind_speed_10m,weather_code,is_day';
 
 function dailyValues(daily: any): Record<string, Series> {
   const mean: Series = daily.temperature_2m_mean ?? daily.temperature_2m_max.map((max: number | null, i: number) => {
@@ -171,6 +171,7 @@ function hourlyValues(hourly: any): Record<string, Series> {
     precipitation_probability: hourly.precipitation_probability ?? [],
     wind: hourly.wind_speed_10m,
     weather_code: hourly.weather_code,
+    is_day: hourly.is_day ?? [],
   };
 }
 

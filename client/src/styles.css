@@ -23,6 +23,7 @@ body {
   --hairline: rgba(11, 11, 11, 0.08);
   --chart-grid: #e8e7e1;
   --chart-axis: #c3c2b7;
+  --ink-primary: #0b0b0b;
   --ink-muted: #898781;
   --ink-secondary: #52514e;
   --series-blue: #2a78d6;
@@ -43,6 +44,7 @@ body {
   --hairline: rgba(255, 255, 255, 0.08);
   --chart-grid: #2c2c2a;
   --chart-axis: #383835;
+  --ink-primary: #ffffff;
   --ink-muted: #898781;
   --ink-secondary: #c3c2b7;
   --series-blue: #3987e5;
