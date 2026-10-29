@@ -46,7 +46,7 @@ type Plan = { type: 'tool'; tool: string; input: Record<string, unknown> } | { t
 
 function nextStep(prompt: LanguageModelV4Prompt): Plan {
   const lastUser = prompt.map((m) => m.role).lastIndexOf('user');
-  const userText = (prompt[lastUser]?.content as any[]).filter((p) => p.type === 'text').map((p) => p.text).join(' ');
+  const userText = ((prompt[lastUser]?.content ?? []) as any[]).filter((p) => p.type === 'text').map((p) => p.text).join(' ');
   const results = prompt.slice(lastUser + 1).flatMap((m) => (m.role === 'tool' ? (m.content as any[]) : []));
   const last = results[results.length - 1];
   const place = /\bin ([A-Z][\p{L}\s.-]+?)(?:\?|$|,| this| over| for| right| now| next| today| tomorrow)/u.exec(userText)?.[1]?.trim() ?? 'Tokyo';
