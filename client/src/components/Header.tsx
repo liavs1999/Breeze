@@ -110,7 +110,13 @@ function HistoryMenu() {
   const [chats, setChats] = useState<ChatSummary[] | null>(null);
 
   return (
-    <Menu width={280} position="bottom-end" onOpen={() => api.chats().then(setChats, () => setChats([]))}>
+    <Menu
+      width={320}
+      position="bottom-end"
+      onOpen={() => api.chats().then(setChats, () => setChats([]))}
+      // The label must be allowed to shrink, or long titles push the delete button out of the menu.
+      styles={{ itemLabel: { minWidth: 0, overflow: 'hidden' }, itemSection: { flexShrink: 0 } }}
+    >
       <Menu.Target>
         <Tooltip label="Recent chats">
           <ActionIcon variant="subtle" color="gray" size="lg" radius="xl" aria-label="Recent chats">
@@ -118,7 +124,7 @@ function HistoryMenu() {
           </ActionIcon>
         </Tooltip>
       </Menu.Target>
-      <Menu.Dropdown>
+      <Menu.Dropdown mah={420} style={{ overflowY: 'auto' }}>
         <Menu.Label>Recent chats</Menu.Label>
         {chats === null && <Menu.Item disabled>Loading…</Menu.Item>}
         {chats?.length === 0 && <Menu.Item disabled>No chats yet</Menu.Item>}
@@ -126,14 +132,14 @@ function HistoryMenu() {
           <Menu.Item
             key={c.id}
             onClick={() => navigate(`/c/${c.id}`)}
-            fw={c.id === current ? 600 : undefined}
+            bg={c.id === current ? 'var(--surface-muted)' : undefined}
             rightSection={
               <ActionIcon
                 component="span"
                 size="sm"
                 variant="subtle"
                 color="gray"
-                aria-label="Delete chat"
+                aria-label={`Delete chat: ${c.title}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   void api.deleteChat(c.id).then(() => {
@@ -146,12 +152,25 @@ function HistoryMenu() {
               </ActionIcon>
             }
           >
-            <Text size="sm" truncate>
+            <Text size="sm" truncate="end" fw={c.id === current ? 600 : undefined} title={c.title}>
               {c.title}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {timeAgo(c.updatedAt)}
             </Text>
           </Menu.Item>
         ))}
       </Menu.Dropdown>
     </Menu>
   );
+}
+
+const RELATIVE = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+function timeAgo(iso: string): string {
+  const minutes = Math.round((Date.now() - Date.parse(iso)) / 60_000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return RELATIVE.format(-minutes, 'minute');
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return RELATIVE.format(-hours, 'hour');
+  return RELATIVE.format(-Math.round(hours / 24), 'day');
 }
