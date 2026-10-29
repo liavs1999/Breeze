@@ -2,10 +2,11 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createGroq } from '@ai-sdk/groq';
 import { createOpenAI } from '@ai-sdk/openai';
-import { APICallError, wrapLanguageModel, type LanguageModel } from 'ai';
+import { APICallError, RetryError, wrapLanguageModel, type LanguageModel } from 'ai';
 import { FALLBACK_MODELS, KEY_HEADERS, PROVIDER_INFO, PROVIDERS, type ProviderId } from '@wwa/shared';
 import { config } from '../config';
 import { currentContext, sleep } from '../context';
+import { scriptedModel } from './scripted';
 
 export interface ModelChoice {
   provider: ProviderId;
@@ -39,8 +40,17 @@ export function baseModel(provider: ProviderId, key: string, model: string): Lan
   }
 }
 
+const slowFault = {
+  specificationVersion: 'v4' as const,
+  wrapStream: async ({ doStream, params }: any) => {
+    if (currentContext().faults.has('llm_slow')) await sleep(3000, params.abortSignal);
+    return doStream();
+  },
+};
+
 /** Errors worth trying another model for: rate limits and overloaded or failing servers. */
 export function isRetryable(error: unknown): boolean {
+  if (RetryError.isInstance(error)) error = error.lastError;
   if (APICallError.isInstance(error)) {
     const s = error.statusCode ?? 0;
     return s === 429 || s === 408 || s >= 500;
@@ -54,6 +64,9 @@ export function isRetryable(error: unknown): boolean {
  * which model actually answered. The llm_slow fault adds a delay before each call.
  */
 export function modelFor(choice: ModelChoice, onModel: (modelId: string) => void): LanguageModel {
+  if (choice.model === 'scripted' && choice.origin === 'server' && !config.isProduction) {
+    return wrapLanguageModel({ model: scriptedModel(), middleware: slowFault });
+  }
   const candidates = [choice.model, ...(FALLBACK_MODELS[choice.provider] ?? []).filter((m) => m !== choice.model)];
   const models = candidates.map((m) => baseModel(choice.provider, choice.key, m) as Exclude<LanguageModel, string>);
   return wrapLanguageModel({

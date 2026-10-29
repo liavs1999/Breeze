@@ -21,6 +21,8 @@ const KEY_VARS: Record<ProviderId, string> = {
 };
 
 function serverKey(): { provider: ProviderId; key: string; model: string } | null {
+  // The scripted test model (end-to-end tests): no key, never in production.
+  if (env.LLM_PROVIDER === 'scripted' && !isProduction) return { provider: 'google', key: 'scripted', model: 'scripted' };
   const named = env.LLM_PROVIDER as ProviderId | undefined;
   const provider = named && PROVIDERS.includes(named) ? named : PROVIDERS.find((p) => env[KEY_VARS[p]]);
   if (!provider) return null;

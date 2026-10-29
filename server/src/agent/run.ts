@@ -1,5 +1,6 @@
 import {
   APICallError,
+  RetryError,
   convertToModelMessages,
   createIdGenerator,
   JsonToSseTransformStream,
@@ -117,6 +118,8 @@ export async function startAnswer({ chatId, messages, choice, units, userTimezon
  */
 function clientError(error: unknown, modelId: string): string {
   if (error instanceof ToolError) return error.message;
+  // After its retries the SDK wraps the provider error; report the underlying one.
+  if (RetryError.isInstance(error)) error = error.lastError;
   if (APICallError.isInstance(error)) {
     const { status, message } = describeLlmError(error, modelId);
     return `${status}|${message}`;
@@ -126,6 +129,7 @@ function clientError(error: unknown, modelId: string): string {
 }
 
 function errorSummary(error: unknown) {
+  if (RetryError.isInstance(error)) error = error.lastError;
   if (APICallError.isInstance(error)) return { status: error.statusCode, message: error.message.slice(0, 300) };
   return error instanceof Error ? { name: error.name, message: error.message.slice(0, 300) } : String(error);
 }

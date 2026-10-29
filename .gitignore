@@ -7,3 +7,5 @@ server/data/
 test-results/
 playwright-report/
 .DS_Store
+server/src/evals/results/*.json
+!server/src/evals/results/latest.json

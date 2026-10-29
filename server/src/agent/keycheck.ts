@@ -1,4 +1,4 @@
-import { APICallError, generateText, LoadAPIKeyError } from 'ai';
+import { APICallError, generateText, LoadAPIKeyError, RetryError } from 'ai';
 import { PROVIDER_INFO, type KeyCheckRequest, type KeyCheckResult } from '@wwa/shared';
 import { baseModel } from './models';
 
@@ -24,6 +24,7 @@ export async function checkKey({ provider, key, model }: KeyCheckRequest): Promi
 }
 
 export function describeLlmError(error: unknown, modelId: string): Pick<KeyCheckResult, 'status' | 'message'> {
+  if (RetryError.isInstance(error)) error = error.lastError;
   if (LoadAPIKeyError.isInstance(error)) return { status: 'invalid_key', message: 'No API key was provided.' };
   if (APICallError.isInstance(error)) {
     const s = error.statusCode ?? 0;

@@ -142,7 +142,7 @@ function niceStep(raw: number): number {
 
 export function ChartFrame({ height, label, children }: { height: number; label: string; children: ReactNode }) {
   return (
-    <div role="img" aria-label={label} style={{ height, width: '100%' }}>
+    <div role="img" aria-label={label} data-chart style={{ height, width: '100%' }}>
       {children}
     </div>
   );
