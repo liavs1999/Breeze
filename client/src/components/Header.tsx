@@ -1,0 +1,154 @@
+import { ActionIcon, Badge, Group, Menu, SegmentedControl, Text, Tooltip, UnstyledButton, useComputedColorScheme, useMantineColorScheme } from '@mantine/core';
+import { IconHistory, IconMoon, IconPlus, IconSun, IconTrash } from '@tabler/icons-react';
+import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { PROVIDER_INFO, type ChatSummary } from '@wwa/shared';
+import { api } from '../lib/api';
+import { updateSettings, useSettings } from '../lib/settings';
+import { useAppStatus } from '../lib/status';
+import { Logo } from './Logo';
+
+export function Header({ onOpenKeyPanel }: { onOpenKeyPanel: () => void }) {
+  const navigate = useNavigate();
+  const { settings } = useSettings();
+  const { setColorScheme } = useMantineColorScheme();
+  const scheme = useComputedColorScheme('light');
+
+  return (
+    <header style={{ position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(10px)', background: 'color-mix(in srgb, var(--mantine-color-body) 82%, transparent)' }}>
+      <Group className="column" justify="space-between" h={56} wrap="nowrap" gap="xs">
+        <UnstyledButton onClick={() => navigate('/')} aria-label="New chat">
+          <Group gap={8} wrap="nowrap">
+            <Logo />
+            <Text fw={600} size="md">
+              Atmos
+            </Text>
+          </Group>
+        </UnstyledButton>
+        <Group gap={6} wrap="nowrap">
+          <KeyBadge onClick={onOpenKeyPanel} />
+          <SegmentedControl
+            size="xs"
+            radius="xl"
+            value={settings.units}
+            onChange={(v) => updateSettings({ units: v as 'metric' | 'imperial' })}
+            data={[
+              { label: '°C', value: 'metric' },
+              { label: '°F', value: 'imperial' },
+            ]}
+            aria-label="Units"
+          />
+          <Tooltip label={scheme === 'dark' ? 'Light mode' : 'Dark mode'}>
+            <ActionIcon variant="subtle" color="gray" size="lg" radius="xl" onClick={() => setColorScheme(scheme === 'dark' ? 'light' : 'dark')} aria-label="Toggle color scheme">
+              {scheme === 'dark' ? <IconSun size={18} stroke={1.6} /> : <IconMoon size={18} stroke={1.6} />}
+            </ActionIcon>
+          </Tooltip>
+          <HistoryMenu />
+          <Tooltip label="New chat">
+            <ActionIcon variant="subtle" color="gray" size="lg" radius="xl" onClick={() => navigate('/')} aria-label="New chat">
+              <IconPlus size={18} stroke={1.6} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
+      </Group>
+    </header>
+  );
+}
+
+/** Which key answers and whether it works; opens the key panel. */
+function KeyBadge({ onClick }: { onClick: () => void }) {
+  const { health, key, serverReachable } = useAppStatus();
+  const { settings, apiKey } = useSettings();
+
+  let color = 'gray';
+  let label = 'Add API key';
+  if (!serverReachable) {
+    color = 'red';
+    label = 'Server offline';
+  } else if (apiKey) {
+    const model = settings.model || PROVIDER_INFO[settings.provider].defaultModel;
+    if (key.state === 'checking') label = 'Checking key…';
+    else if (key.state === 'ok') {
+      color = 'teal';
+      label = `${model} · ready`;
+    } else if (key.state === 'problem') {
+      color = key.result?.status === 'rate_limited' ? 'yellow' : 'red';
+      label = key.result?.status === 'rate_limited' ? 'Key rate-limited' : 'Key problem';
+    } else label = 'Your key';
+  } else if (health?.serverKey) {
+    color = 'sky';
+    label = 'Demo key';
+  }
+
+  return (
+    <Tooltip label={apiKey ? key.result?.message ?? 'Model and key' : health?.serverKey ? `Using the demo key (${health.serverKey.model}). Add your own any time.` : 'Add a key to start'}>
+      <Badge
+        component="button"
+        onClick={onClick}
+        variant="light"
+        color={color}
+        size="lg"
+        radius="xl"
+        tt="none"
+        fw={500}
+        leftSection={<span style={{ width: 7, height: 7, borderRadius: 99, background: 'currentColor', display: 'inline-block' }} />}
+        style={{ cursor: 'pointer', maxWidth: 210 }}
+        visibleFrom="xs"
+      >
+        {label}
+      </Badge>
+    </Tooltip>
+  );
+}
+
+function HistoryMenu() {
+  const navigate = useNavigate();
+  const { id: current } = useParams();
+  const [chats, setChats] = useState<ChatSummary[] | null>(null);
+
+  return (
+    <Menu width={280} position="bottom-end" onOpen={() => api.chats().then(setChats, () => setChats([]))}>
+      <Menu.Target>
+        <Tooltip label="Recent chats">
+          <ActionIcon variant="subtle" color="gray" size="lg" radius="xl" aria-label="Recent chats">
+            <IconHistory size={18} stroke={1.6} />
+          </ActionIcon>
+        </Tooltip>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Label>Recent chats</Menu.Label>
+        {chats === null && <Menu.Item disabled>Loading…</Menu.Item>}
+        {chats?.length === 0 && <Menu.Item disabled>No chats yet</Menu.Item>}
+        {chats?.map((c) => (
+          <Menu.Item
+            key={c.id}
+            onClick={() => navigate(`/c/${c.id}`)}
+            fw={c.id === current ? 600 : undefined}
+            rightSection={
+              <ActionIcon
+                component="span"
+                size="sm"
+                variant="subtle"
+                color="gray"
+                aria-label="Delete chat"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void api.deleteChat(c.id).then(() => {
+                    setChats((list) => list?.filter((x) => x.id !== c.id) ?? null);
+                    if (c.id === current) navigate('/');
+                  });
+                }}
+              >
+                <IconTrash size={14} />
+              </ActionIcon>
+            }
+          >
+            <Text size="sm" truncate>
+              {c.title}
+            </Text>
+          </Menu.Item>
+        ))}
+      </Menu.Dropdown>
+    </Menu>
+  );
+}

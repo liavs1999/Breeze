@@ -1,0 +1,137 @@
+/* Page frame and the chart tokens (validated palette, see client/src/charts/palette.ts). */
+:root {
+  --app-max: 760px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  background: var(--mantine-color-body);
+}
+
+[data-mantine-color-scheme='light'] {
+  --mantine-color-body: #fbfbfa;
+  --surface: #ffffff;
+  --surface-muted: #f3f3f1;
+  --hairline: rgba(11, 11, 11, 0.08);
+  --chart-grid: #e8e7e1;
+  --chart-axis: #c3c2b7;
+  --ink-muted: #898781;
+  --ink-secondary: #52514e;
+  --series-blue: #2a78d6;
+  --series-orange: #eb6834;
+  --series-aqua: #1baf7a;
+  --series-yellow: #eda100;
+  --series-violet: #4a3aa7;
+  --diverging-warm: #e34948;
+  --diverging-cool: #2a78d6;
+  --diverging-neutral: #d9d8d3;
+  --normal-band: rgba(82, 81, 78, 0.12);
+}
+
+[data-mantine-color-scheme='dark'] {
+  --mantine-color-body: #141517;
+  --surface: #1b1c1e;
+  --surface-muted: #232427;
+  --hairline: rgba(255, 255, 255, 0.08);
+  --chart-grid: #2c2c2a;
+  --chart-axis: #383835;
+  --ink-muted: #898781;
+  --ink-secondary: #c3c2b7;
+  --series-blue: #3987e5;
+  --series-orange: #d95926;
+  --series-aqua: #199e70;
+  --series-yellow: #c98500;
+  --series-violet: #9085e9;
+  --diverging-warm: #e66767;
+  --diverging-cool: #3987e5;
+  --diverging-neutral: #4a4a46;
+  --normal-band: rgba(195, 194, 183, 0.14);
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.column {
+  width: 100%;
+  max-width: var(--app-max);
+  margin: 0 auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+}
+
+/* Markdown inside answers */
+.answer p {
+  margin: 0 0 0.6em;
+  line-height: 1.6;
+}
+.answer p:last-child {
+  margin-bottom: 0;
+}
+.answer ul,
+.answer ol {
+  margin: 0.2em 0 0.6em;
+  padding-left: 1.3em;
+  line-height: 1.6;
+}
+.answer li + li {
+  margin-top: 0.15em;
+}
+.answer strong {
+  font-weight: 600;
+}
+.answer a {
+  color: var(--mantine-color-sky-6);
+}
+
+/* Recharts: tabular axis numbers, no focus outline on the svg */
+.recharts-cartesian-axis-tick text {
+  font-variant-numeric: tabular-nums;
+}
+.recharts-wrapper svg:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fade-in {
+  animation: fade-in 220ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation: none;
+  }
+}
+
+.example {
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+.example:hover {
+  border-color: var(--mantine-color-sky-light-color);
+  background: var(--surface-muted);
+}

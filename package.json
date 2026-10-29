@@ -1,0 +1,24 @@
+{
+  "name": "world-weather-agent",
+  "private": true,
+  "type": "module",
+  "workspaces": ["shared", "server", "client"],
+  "scripts": {
+    "dev": "concurrently -k -n server,client -c blue,magenta \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w client && npm run build -w server",
+    "start": "npm run start -w server",
+    "test": "npm run test -w server && npm run test -w client",
+    "typecheck": "tsc -p shared && tsc -p server && tsc -p client",
+    "lint": "oxlint",
+    "e2e": "playwright test",
+    "evals": "npm run evals -w server"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^22.10.0",
+    "concurrently": "^10.0.6",
+    "oxlint": "^1.90.0",
+    "typescript": "^7.0.2"
+  },
+  "engines": { "node": ">=22.12" }
+}

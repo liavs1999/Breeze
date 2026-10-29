@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Atmos · weather chat</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script>
+      // Apply the saved (or system) color scheme before the first paint, so a refresh never flashes.
+      try {
+        var saved = localStorage.getItem('mantine-color-scheme-value');
+        var scheme = saved === 'light' || saved === 'dark' ? saved : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-mantine-color-scheme', scheme);
+      } catch (e) {}
+    </script>
+    <style>
+      html[data-mantine-color-scheme='dark'] { background: #141517; }
+      html[data-mantine-color-scheme='light'] { background: #fbfbfa; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

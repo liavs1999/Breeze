@@ -1,0 +1,30 @@
+{
+  "name": "@wwa/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/index.js --banner:js=\"import{createRequire}from'module';const require=createRequire(import.meta.url);\"",
+    "start": "node --disable-warning=ExperimentalWarning dist/index.js",
+    "test": "vitest run",
+    "evals": "tsx src/evals/run.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.92",
+    "@ai-sdk/google": "^4.0.108",
+    "@ai-sdk/groq": "^4.0.73",
+    "@ai-sdk/openai": "^4.0.105",
+    "@hono/node-server": "^2.1.5",
+    "@wwa/shared": "*",
+    "ai": "^7.0.157",
+    "hono": "^4.13.14",
+    "lru-cache": "^11.5.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "msw": "^3.0.3",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.5"
+  }
+}
