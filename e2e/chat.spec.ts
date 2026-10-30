@@ -95,9 +95,9 @@ test('the key panel checks a key and explains a rejected one', async ({ page }) 
   await page.goto('/');
   await page.getByRole('button', { name: /model and key/i }).click();
   await page.getByLabel('API key').fill('not-a-real-key-123456');
-  await page.getByRole('button', { name: 'Check models' }).click();
+  await page.getByLabel('API key').press('Enter');
   await expect(page.getByText('Key rejected')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Save' })).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('breeze:key'))).toBeNull();
 });
 
 test('the logo always opens a fresh home page, even after chatting', async ({ page }) => {
@@ -187,74 +187,90 @@ test('a chat opened from someone else’s link is read-only and can be continued
   await other.context().close();
 });
 
-test('the key panel shows which models a key can use, and saves the one picked', async ({ page }) => {
-  // Stand-in provider answers, one per model, arriving at different times.
-  const answers: Record<string, { status: string; message: string; latencyMs?: number; delay: number }> = {
-    'gemini-3.6-flash': { status: 'ok', message: 'Key works.', latencyMs: 900, delay: 100 },
-    'gemini-3.5-flash': { status: 'rate_limited', message: 'The key works, but its quota is used up.', delay: 50 },
-    'gemini-3.5-flash-lite': { status: 'ok', message: 'Key works.', latencyMs: 400, delay: 150 },
-    'gemini-3.8-flash': { status: 'no_model_access', message: 'This key cannot use gemini-3.8-flash.', delay: 800 },
-  };
+/** Stand-in provider answers for the key check, one per model; records which key each check sent. */
+async function fakeProvider(page: Page, answers: Record<string, { status: string; message?: string; latencyMs?: number; delay?: number }>) {
+  const sent: { model: string; key?: string }[] = [];
   await page.route('**/api/keys/check', async (route) => {
-    const { model } = route.request().postDataJSON();
-    const { delay, ...answer } = answers[model];
+    const { model, key } = route.request().postDataJSON();
+    sent.push({ model, key });
+    const { delay = 0, ...answer } = answers[model] ?? { status: 'no_model_access' };
     await new Promise((r) => setTimeout(r, delay));
-    await route.fulfill({ json: { provider: 'google', model, ...answer } });
+    await route.fulfill({ json: { provider: 'google', model, message: '', ...answer } });
   });
+  return sent;
+}
+
+const GEMINI_ANSWERS = {
+  'gemini-3.6-flash': { status: 'ok', latencyMs: 900, delay: 100 },
+  'gemini-3.5-flash': { status: 'rate_limited', message: 'The key works, but its quota is used up.', delay: 50 },
+  'gemini-3.5-flash-lite': { status: 'ok', latencyMs: 400, delay: 150 },
+  'gemini-3.8-flash': { status: 'no_model_access', delay: 600 },
+};
+const setting = (page: Page, key: string) => page.evaluate((k) => localStorage.getItem(k), key);
+const pickedModel = (page: Page) => page.evaluate(() => JSON.parse(localStorage.getItem('breeze:settings') ?? '{}').model);
+
+async function paste(page: Page, text: string) {
+  await page.getByLabel('API key').focus();
+  await page.getByLabel('API key').evaluate((input, t) => {
+    const data = new DataTransfer();
+    data.setData('text/plain', t);
+    input.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
+  }, text);
+}
+
+test('a pasted key is checked at once, saved with a working model, and the panel stays open', async ({ page }) => {
+  await fakeProvider(page, GEMINI_ANSWERS);
+  await page.goto('/');
+  await page.getByRole('button', { name: /model and key/i }).click();
+  await paste(page, 'test-key-0000000000');
+
+  const models = page.getByRole('radiogroup', { name: 'Models' });
+  await expect(models.getByRole('radio', { name: /gemini-3\.6-flash/ })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByText('Saved')).toBeVisible();
+  await expect(models.getByText('Quota used up')).toBeVisible();
+  await expect(models.getByText('Not available')).toBeVisible();
+  await expect(models.getByRole('radio', { name: /gemini-3\.8-flash/ })).toBeDisabled();
+  expect(await setting(page, 'breeze:key')).toBe('test-key-0000000000');
+  await expect(page.getByRole('dialog')).toBeVisible(); // it does not close by itself
+
+  await page.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByLabel('Message')).toBeFocused();
+});
+
+test('clicking a working model switches to it at once', async ({ page }) => {
+  await fakeProvider(page, GEMINI_ANSWERS);
   await page.goto('/');
   await page.getByRole('button', { name: /model and key/i }).click();
   await page.getByLabel('API key').fill('test-key-0000000000');
-  await page.getByRole('button', { name: 'Check models' }).click();
-
+  await page.getByLabel('API key').press('Enter');
   const models = page.getByRole('radiogroup', { name: 'Models' });
-  await expect(models.getByText('Works · 0.9 s')).toBeVisible();
-  await expect(models.getByText('Quota used up')).toBeVisible();
-  await expect(models.getByText('Not available')).toBeVisible();
-  await expect(models.getByRole('radio', { name: /gemini-3\.6-flash/ })).toHaveAttribute('aria-checked', 'true');
-  await expect(models.getByRole('radio', { name: /gemini-3\.8-flash/ })).toBeDisabled();
-
+  await expect(models.getByText('Works · 0.4 s')).toBeVisible();
   await models.getByRole('radio', { name: /gemini-3\.5-flash-lite/ }).click();
-  await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('breeze:settings') ?? '{}').model)).toBe('gemini-3.5-flash-lite');
-});
-
-test('a pasted key that works is saved, and the panel closes onto the chat input', async ({ page }) => {
-  await page.route('**/api/keys/check', async (route) => {
-    const { model } = route.request().postDataJSON();
-    const works = model !== 'gemini-3.8-flash';
-    await route.fulfill({ json: { provider: 'google', model, status: works ? 'ok' : 'no_model_access', message: '', latencyMs: 500 } });
-  });
-  await page.goto('/');
-  await page.getByRole('button', { name: /model and key/i }).click();
-  await page.getByLabel('API key').focus();
-  await page.getByLabel('API key').evaluate((input) => {
-    const data = new DataTransfer();
-    data.setData('text/plain', 'test-key-0000000000');
-    input.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
-  });
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByLabel('Message')).toBeFocused();
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('breeze:settings') ?? '{}').model)).toBe('gemini-3.6-flash');
-  expect(await page.evaluate(() => localStorage.getItem('breeze:key'))).toBe('test-key-0000000000');
-});
-
-test('the key in server/.env is listed like a pasted key, and only the model choice is kept', async ({ page }) => {
-  const sentKeys: unknown[] = [];
-  await page.route('**/api/keys/check', async (route) => {
-    const { model, key } = route.request().postDataJSON();
-    sentKeys.push(key);
-    await route.fulfill({ json: { provider: 'google', model, status: 'ok', message: '', latencyMs: 300 } });
-  });
-  await page.goto('/');
-  await page.getByRole('button', { name: /model and key/i }).click();
-  await expect(page.getByText(/key ••••\w{4}, from server\/\.env/)).toBeVisible();
-  await page.getByRole('button', { name: 'Check models' }).click();
-  await page.getByRole('radiogroup', { name: 'Models' }).getByRole('radio', { name: /gemini-3\.5-flash-lite/ }).click();
-  await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  expect(sentKeys.every((k) => k === undefined)).toBe(true); // the browser never had the key
-  expect(await page.evaluate(() => localStorage.getItem('breeze:key'))).toBeNull();
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('breeze:settings') ?? '{}').model)).toBe('gemini-3.5-flash-lite');
+  await expect(models.getByRole('radio', { name: /gemini-3\.5-flash-lite/ })).toHaveAttribute('aria-checked', 'true');
+  expect(await pickedModel(page)).toBe('gemini-3.5-flash-lite');
+  await page.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByRole('button', { name: /model and key/i })).toHaveText('Gemini 3.5 Flash Lite');
+});
+
+test('the key in server/.env is listed like a pasted key, never sent from the browser, and its last check is kept', async ({ page }) => {
+  const sent = await fakeProvider(page, GEMINI_ANSWERS);
+  await page.goto('/');
+  await page.getByRole('button', { name: /model and key/i }).click();
+  await expect(page.getByText(/Your key ••••\w{4}, from server\/\.env\./)).toBeVisible();
+  await expect(page.getByText('Not checked yet.', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'Check models' }).click();
+  const models = page.getByRole('radiogroup', { name: 'Models' });
+  await models.getByRole('radio', { name: /gemini-3\.5-flash-lite/ }).click();
+  expect(await pickedModel(page)).toBe('gemini-3.5-flash-lite');
+  expect(await setting(page, 'breeze:key')).toBeNull();
+  expect(sent.every((s) => s.key === undefined)).toBe(true);
+
+  // Reopened: the last check is shown again, without new requests.
+  await page.getByRole('button', { name: 'Done' }).click();
+  const before = sent.length;
+  await page.getByRole('button', { name: /model and key/i }).click();
+  await expect(page.getByText('checked just now')).toBeVisible();
+  await expect(models.getByText('Works · 0.9 s')).toBeVisible();
+  expect(sent.length).toBe(before);
 });

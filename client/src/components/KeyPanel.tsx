@@ -1,204 +1,294 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Anchor, Badge, Button, Checkbox, Group, Loader, Modal, Radio, Select, Stack, Text, TextInput } from '@mantine/core';
-import { IconAlertTriangle, IconInfoCircle, IconKey } from '@tabler/icons-react';
+import { Alert, Anchor, Badge, Button, Checkbox, Group, Loader, Modal, Radio, Select, Stack, Text, TextInput, VisuallyHidden } from '@mantine/core';
+import { IconAlertTriangle, IconCheck, IconKey, IconRefresh } from '@tabler/icons-react';
 import { PROVIDER_INFO, PROVIDERS, type KeyCheckResult, type ProviderId } from '@wwa/shared';
 import { api, ApiError } from '../lib/api';
 import { clearKey, maskKey, saveKey, updateSettings, useSettings } from '../lib/settings';
 import { setKeyResult, useAppStatus } from '../lib/status';
+import { read, write } from '../lib/storage';
 
 const usable = (r: KeyCheckResult | undefined): r is KeyCheckResult => r?.status === 'ok' || r?.status === 'rate_limited';
 
+/** The last check of each key (by its source, provider and last four characters; never the key). */
+interface ModelCheck {
+  id: string;
+  models: string[];
+  results: Record<string, KeyCheckResult>;
+  checkedAt: number;
+}
+const CHECKS = 'breeze:model-checks';
+function savedChecks(): Record<string, ModelCheck> {
+  try {
+    return JSON.parse(read(CHECKS) ?? '{}');
+  } catch {
+    return {};
+  }
+}
+function storeCheck(id: string, check: ModelCheck | null) {
+  const all = savedChecks();
+  if (check) all[id] = check;
+  else delete all[id];
+  write(CHECKS, JSON.stringify(all));
+}
+
 /**
- * "Model & key": pick a provider, paste a key, and check it against every model the provider offers
- * (one tiny request each, shown as each one answers). The models that work can be picked; the key and
- * the chosen model are saved in this browser and travel to the server only as headers on chat requests.
- * A pasted key is checked at once and, when it works, saved with the current model (or the first that
- * works), and the panel closes onto the chat input.
+ * "Model & key": the key in use (pasted in this browser, or from server/.env) and the models it can
+ * use, from the last check. Pasting a key checks it at once; once a model works the key is saved with
+ * it. Clicking a working model switches to it immediately. The panel closes only with Done.
  */
 export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => void }) {
   const { settings, apiKey } = useSettings();
   const { health } = useAppStatus();
+  const env = health?.serverKey ?? null;
   const [provider, setProvider] = useState<ProviderId>(settings.provider);
-  const [key, setKey] = useState('');
-  const [extra, setExtra] = useState('');
+  const [typed, setTyped] = useState('');
   const [remember, setRemember] = useState(settings.remember);
-  /** The models being checked, in order, and each one's result once it arrives. */
-  const [models, setModels] = useState<string[] | null>(null);
-  const [results, setResults] = useState<Record<string, KeyCheckResult>>({});
-  const [selected, setSelected] = useState<string | null>(null);
+  const [live, setLive] = useState<ModelCheck | null>(null);
+  const [extraOpen, setExtraOpen] = useState(false);
+  const [extra, setExtra] = useState('');
+  const [savedNote, setSavedNote] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const run = useRef(0);
-  const picked = useRef(false);
 
   useEffect(() => {
     if (!opened) return;
-    setProvider(settings.provider);
+    setProvider(apiKey || !env ? settings.provider : env.provider);
     setRemember(settings.remember);
-    setKey('');
-    setExtra('');
-    reset();
+    setTyped('');
+    setLive(null);
+    setExtraOpen(false);
+    setRequestError(null);
   }, [opened]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const info = PROVIDER_INFO[provider];
-  const env = health?.serverKey ?? null;
-  const typed = key.trim();
-  const savedHere = provider === settings.provider && Boolean(apiKey);
+  const key = typed.trim();
+  const savedHere = Boolean(apiKey) && provider === settings.provider;
   // The key in server/.env answers when no key is pasted in this browser.
   const envHere = !apiKey && env?.provider === provider;
-  /** The key to check or save; undefined means the key in server/.env (checked on the server). */
-  const browserKey = typed || (savedHere ? apiKey : undefined);
-  const canCheck = Boolean(browserKey || envHere);
-  const savedModel = settings.model || PROVIDER_INFO[settings.provider].defaultModel;
-  const envModel = env ? (settings.provider === env.provider && settings.model) || env.model : '';
-  const checking = Boolean(models && models.some((m) => !results[m]));
-  // A rejected key is rejected for every model: say it once instead of on each row.
-  const rejection = Object.values(results).find((r) => r.status === 'invalid_key');
-  const choice = selected ? results[selected] : undefined;
+  const pastedId = (k: string) => `pasted:${provider}:${maskKey(k)}`;
+  const activeId = key ? pastedId(key) : savedHere ? pastedId(apiKey) : envHere && env ? `env:${provider}:${env.keyHint}` : null;
+  const shown = live?.id === activeId ? live : activeId ? savedChecks()[activeId] : undefined;
+  const checking = Boolean(live && live.id === activeId && live.models.some((m) => !live.results[m]));
+  const rejection = shown && Object.values(shown.results).find((r) => r.status === 'invalid_key');
+  /** The model this key answers with now (nothing yet for a key that is still being checked). */
+  const inUse = savedHere
+    ? settings.model || info.defaultModel
+    : envHere && env
+      ? (settings.provider === provider && settings.model) || env.model
+      : null;
 
-  function reset() {
-    run.current++;
-    picked.current = false;
-    setModels(null);
-    setResults({});
-    setSelected(null);
-    setRequestError(null);
+  function close() {
+    onClose();
+    // Straight to asking: the chat input, once the panel has closed.
+    setTimeout(() => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Message"]')?.focus(), 250);
   }
 
-  /** Checks every model. With `autoSave` (a pasted key), saves as soon as a good model is known. */
-  function check(keyToCheck = browserKey, autoSave = false) {
-    if (!keyToCheck && !envHere) return;
-    reset();
-    const id = run.current;
-    const list = [...new Set([...info.models, ...(extra.trim() ? [extra.trim()] : [])])];
-    const current = keyToCheck ? (savedHere && keyToCheck === apiKey ? savedModel : info.defaultModel) : envModel;
-    const found: Record<string, KeyCheckResult> = {};
-    setModels(list);
-    for (const model of list) {
+  /**
+   * Checks models with a key (undefined: the key in server/.env). A newly pasted key is saved as soon as
+   * its preferred model works, or with the first that works once all have answered.
+   */
+  function check(models: string[], keyToCheck: string | undefined, id: string, opts: { adopt?: boolean; merge?: boolean } = {}) {
+    const runId = opts.merge ? run.current : ++run.current;
+    const base: ModelCheck = opts.merge && shown ? { ...shown, models: [...new Set([...shown.models, ...models])] } : { id, models, results: {}, checkedAt: Date.now() };
+    setLive(base);
+    setRequestError(null);
+    const found: Record<string, KeyCheckResult> = { ...base.results };
+    let adopted = !opts.adopt;
+    const preferred = inUse ?? info.defaultModel;
+    for (const model of models) {
       api
         .checkKey({ provider, key: keyToCheck, model })
         .catch((error): KeyCheckResult => ({ provider, model, status: 'error', message: error instanceof ApiError ? error.message : 'The check failed.' }))
         .then((r) => {
-          if (run.current !== id) return;
+          if (run.current !== runId) return;
           found[model] = r;
-          setResults((prev) => ({ ...prev, [model]: r }));
+          setLive((prev) => {
+            const next = prev && prev.id === id ? { ...prev, results: { ...prev.results, [model]: r } } : prev;
+            if (next) storeCheck(id, next);
+            return next;
+          });
           if (r.status === 'error' && /too many/i.test(r.message)) setRequestError(r.message);
-          // Until the user picks: the current model if it works, otherwise the first one that does.
-          if (!picked.current && r.status === 'ok') setSelected((s) => (s && s === current ? s : model === current || !s ? model : s));
-          if (!autoSave || picked.current) return;
-          // The current model works: done. Otherwise wait for all, then take the first that works.
-          const done = list.every((m) => found[m]);
-          const best = found[current]?.status === 'ok' ? found[current] : done ? list.map((m) => found[m]).find((x) => x.status === 'ok') : undefined;
-          if (best) save(best, keyToCheck);
+          if (adopted) return;
+          const done = base.models.every((m) => found[m]);
+          const best = found[preferred]?.status === 'ok' ? found[preferred] : done ? base.models.map((m) => found[m]).find((x) => x?.status === 'ok') : undefined;
+          if (best) {
+            adopted = true;
+            use(best, keyToCheck);
+          }
         });
     }
   }
 
-  function save(result = choice, keyToSave = browserKey) {
+  /** Switches to a working model; a key pasted in the panel is saved with it. */
+  function use(result: KeyCheckResult | undefined, newKey = key || undefined) {
     if (!usable(result)) return;
-    run.current++; // ignore checks still on their way
     updateSettings({ provider, model: result.model });
-    // A pasted key is kept in this browser; for the key in server/.env only the model choice is.
-    if (keyToSave) {
-      saveKey(keyToSave, remember);
-      setKeyResult(result);
+    if (newKey && newKey !== apiKey) {
+      saveKey(newKey, remember);
+      setTyped('');
     }
-    onClose();
-    // Straight to asking: the chat input, once the panel has closed and returned focus.
-    setTimeout(() => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Message"]')?.focus(), 250);
+    if (newKey || savedHere) setKeyResult(result);
+    setSavedNote(true);
+    setTimeout(() => setSavedNote(false), 2000);
   }
 
-  return (
-    <Modal opened={opened} onClose={onClose} title={<Group gap={8}><IconKey size={18} stroke={1.6} /><Text fw={600}>Model & key</Text></Group>} size="md">
-      <Stack gap="md">
-        <Text size="sm" c="dimmed">
-          {apiKey
-            ? `Your ${PROVIDER_INFO[settings.provider].label} key ${maskKey(apiKey)}, pasted in this browser, answers with ${savedModel}.`
-            : env
-              ? `Your ${PROVIDER_INFO[env.provider].label} key ${env.keyHint}, from server/.env, answers with ${envModel}.`
-              : 'A key is needed to chat.'}
-        </Text>
+  const checkTyped = (k = key) => k && check(info.models, k, pastedId(k), { adopt: true });
+  const checkAgain = () => activeId && check(shown?.models ?? info.models, key || (savedHere ? apiKey : undefined), activeId, { adopt: Boolean(key) });
 
+  const source = savedHere
+    ? `Your key ${maskKey(apiKey)}, pasted in this browser.`
+    : envHere && env
+      ? `Your key ${env.keyHint}, from server/.env.`
+      : null;
+
+  return (
+    <Modal opened={opened} onClose={close} returnFocus={false} title={<Group gap={8}><IconKey size={18} stroke={1.6} /><Text fw={600}>Model & key</Text></Group>} size="md">
+      <Stack gap="md">
         <Select
           label="Provider"
           data={PROVIDERS.map((p) => ({ value: p, label: PROVIDER_INFO[p].label }))}
           value={provider}
           onChange={(v) => {
             if (!v) return;
+            run.current++;
             setProvider(v as ProviderId);
-            reset();
+            setTyped('');
+            setLive(null);
           }}
           allowDeselect={false}
         />
 
-        {/* A plain masked field: no button to reveal the key. */}
-        <TextInput
-          type="password"
-          label="API key"
-          placeholder={savedHere ? `Saved key ${maskKey(apiKey)}, paste to replace` : envHere ? `Using ${env?.keyHint} from server/.env, paste to use another` : 'Paste your key'}
-          value={key}
-          onChange={(e) => {
-            setKey(e.currentTarget.value);
-            reset();
-          }}
-          onKeyDown={(e) => e.key === 'Enter' && void check()}
-          onPaste={(e) => {
-            const pasted = e.clipboardData.getData('text').trim();
-            if (!pasted) return;
-            e.preventDefault();
-            setKey(pasted);
-            check(pasted, true);
-          }}
-          autoComplete="off"
-          spellCheck={false}
-          description={
-            <>
-              Get one at{' '}
-              <Anchor href={info.keyUrl} target="_blank" rel="noreferrer" size="xs">
-                {new URL(info.keyUrl).host}
-              </Anchor>
-              {provider === 'google' ? ' (free).' : '.'}
-            </>
-          }
-        />
-
-        <TextInput
-          label="Another model"
-          placeholder="Optional model id, checked with the others"
-          value={extra}
-          onChange={(e) => setExtra(e.currentTarget.value)}
-          onKeyDown={(e) => e.key === 'Enter' && void check()}
-          spellCheck={false}
-        />
+        <Stack gap={6}>
+          {/* A plain masked field: no button to reveal the key. */}
+          <TextInput
+            type="password"
+            label="API key"
+            description={
+              <>
+                {source ? `${source} Paste another to replace it. ` : 'Get one at '}
+                {!source && (
+                  <Anchor href={info.keyUrl} target="_blank" rel="noreferrer" size="xs">
+                    {new URL(info.keyUrl).host}
+                  </Anchor>
+                )}
+                {!source && (provider === 'google' ? ' (free).' : '.')}
+              </>
+            }
+            placeholder={source ? 'Paste a new key' : 'Paste your key'}
+            value={typed}
+            onChange={(e) => {
+              run.current++;
+              setTyped(e.currentTarget.value);
+              setLive(null);
+            }}
+            onPaste={(e) => {
+              const pasted = e.clipboardData.getData('text').trim();
+              if (!pasted) return;
+              e.preventDefault();
+              setTyped(pasted);
+              checkTyped(pasted);
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && checkTyped()}
+            rightSection={
+              key && !checking && !shown ? (
+                <Button size="compact-xs" variant="light" onClick={() => checkTyped()}>
+                  Check
+                </Button>
+              ) : null
+            }
+            rightSectionWidth={64}
+            autoComplete="off"
+            spellCheck={false}
+          />
+          {(key || savedHere) && (
+            <Checkbox
+              size="xs"
+              label="Remember this key on this device"
+              checked={remember}
+              onChange={(e) => {
+                const on = e.currentTarget.checked;
+                setRemember(on);
+                if (savedHere && !key) saveKey(apiKey, on);
+              }}
+            />
+          )}
+        </Stack>
 
         {rejection && (
           <Alert color="red" variant="light" icon={<IconAlertTriangle size={18} />} title="Key rejected">
             {rejection.message}
           </Alert>
         )}
-        {models && !rejection && (
-          <Radio.Group
-            label="Models"
-            description="Pick the model to answer with."
-            value={selected}
-            onChange={(v) => {
-              picked.current = true;
-              setSelected(v);
-            }}
-          >
-            <Stack gap={6} mt={8}>
-              {models.map((m) => (
-                <ModelRow key={m} model={m} result={results[m]} isDefault={m === info.defaultModel} />
+
+        {activeId && !rejection && (
+          <Stack gap={8}>
+            <Group justify="space-between" gap="xs">
+              <Group gap={8}>
+                <Text size="sm" fw={500}>
+                  Models
+                </Text>
+                {savedNote && (
+                  <Group gap={4} c="teal" className="fade-in">
+                    <IconCheck size={14} />
+                    <Text size="xs">Saved</Text>
+                  </Group>
+                )}
+              </Group>
+              <Group gap={8}>
+                {shown && !checking && (
+                  <Text size="xs" c="dimmed">
+                    checked {timeAgo(shown.checkedAt)}
+                  </Text>
+                )}
+                <Button size="compact-xs" variant="subtle" leftSection={<IconRefresh size={13} />} onClick={checkAgain} loading={checking}>
+                  {shown ? 'Check again' : 'Check models'}
+                </Button>
+              </Group>
+            </Group>
+
+            {shown ? (
+              <Radio.Group value={inUse} onChange={(m) => use(shown.results[m])} label={<VisuallyHidden>Models</VisuallyHidden>}>
+                <Stack gap={6}>
+                  {shown.models.map((m) => (
+                    <ModelRow key={m} model={m} result={shown.results[m]} isDefault={m === info.defaultModel} />
+                  ))}
+                </Stack>
+              </Radio.Group>
+            ) : (
+              <Text size="sm" c="dimmed">
+                Not checked yet. Check models to see which ones this key can use.
+              </Text>
+            )}
+
+            {shown &&
+              (extraOpen ? (
+                <TextInput
+                  size="xs"
+                  placeholder="Another model id, e.g. gemini-3.5-pro"
+                  value={extra}
+                  onChange={(e) => setExtra(e.currentTarget.value)}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter' || !extra.trim()) return;
+                    check([extra.trim()], key || (savedHere ? apiKey : undefined), activeId, { merge: true });
+                    setExtra('');
+                    setExtraOpen(false);
+                  }}
+                  autoFocus
+                  spellCheck={false}
+                />
+              ) : (
+                <Anchor component="button" size="xs" c="dimmed" onClick={() => setExtraOpen(true)} style={{ alignSelf: 'flex-start' }}>
+                  + Another model id
+                </Anchor>
               ))}
-            </Stack>
-          </Radio.Group>
+          </Stack>
         )}
+
         {requestError && (
           <Alert color="red" variant="light" icon={<IconAlertTriangle size={18} />}>
             {requestError}
           </Alert>
         )}
-
-        <Checkbox label="Remember on this device" checked={remember} onChange={(e) => setRemember(e.currentTarget.checked)} description="Off: the key is kept for this tab only." />
 
         <Group justify="space-between">
           {apiKey ? (
@@ -206,8 +296,11 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
               variant="subtle"
               color="red"
               onClick={() => {
+                storeCheck(`pasted:${settings.provider}:${maskKey(apiKey)}`, null);
                 clearKey();
-                reset();
+                setTyped('');
+                setLive(null);
+                if (env) setProvider(env.provider);
               }}
             >
               Remove pasted key
@@ -215,27 +308,24 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
           ) : (
             <span />
           )}
-          <Group gap="xs">
-            <Button variant={models && !rejection ? 'default' : 'filled'} onClick={() => check()} loading={checking} disabled={!canCheck}>
-              {models ? 'Check again' : 'Check models'}
-            </Button>
-            {models && !rejection && (
-              <Button onClick={() => save()} disabled={!usable(choice)}>
-                Save
-              </Button>
-            )}
-          </Group>
+          <Button onClick={close}>Done</Button>
         </Group>
 
-        <Alert variant="light" color="gray" icon={<IconInfoCircle size={18} />} p="sm">
-          <Text size="xs">
-            Checking sends one tiny request to each model. A pasted key stays in this browser: it is sent to this app's server with each question,
-            used for that answer, and never stored or logged. A key in server/.env never reaches the browser.
-          </Text>
-        </Alert>
+        <Text size="xs" c="dimmed">
+          Keys are never shown. A pasted key stays in this browser; a key in server/.env stays on the server. A check sends one tiny request to each
+          model.
+        </Text>
       </Stack>
     </Modal>
   );
+}
+
+function timeAgo(at: number): string {
+  const s = Math.round((Date.now() - at) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86_400) return `${Math.round(s / 3600)} h ago`;
+  return new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
 const STATUS: Record<KeyCheckResult['status'], { color: string; label: (r: KeyCheckResult) => string }> = {
