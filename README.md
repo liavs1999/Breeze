@@ -29,7 +29,7 @@ No key in `server/.env`? Paste one in the app under **Model & key**; it is check
 
 ### With Docker
 
-No Node needed, only Docker. Add your key to `server/.env` as above, then:
+No Node needed, only Docker. The key is optional here too: put it in `server/.env` as above, or paste it in the app.
 
 ```bash
 docker compose up --build             # → http://localhost:8787
@@ -39,7 +39,7 @@ Chats are kept in a Docker volume between runs. Without Compose:
 
 ```bash
 docker build -t breeze .
-docker run -p 8787:8787 --env-file server/.env -v breeze-data:/data breeze
+docker run -p 8787:8787 -v breeze-data:/data breeze    # add --env-file server/.env to use your key from the file
 ```
 
 ## When does a chart appear?
