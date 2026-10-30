@@ -29,8 +29,17 @@ const QUESTION: Record<Next, (place: string) => Suggestion> = {
   air_quality: (p) => ({ label: `Air quality`, prompt: `How's the air quality in ${p} over the next few days?` }),
 };
 
+/** A data tool result the server would also chart: 4+ days, 6+ hours, or 2+ days of air quality. */
+function chartable(part: ChatMessage['parts'][number]): boolean {
+  if (part.type !== 'tool-get_forecast' && part.type !== 'tool-get_history' && part.type !== 'tool-get_air_quality') return false;
+  if (part.state !== 'output-available') return false;
+  const o = part.output as { dataset_id?: string; summary?: { days?: number; hours?: number }; days?: unknown[] };
+  return Boolean(o.dataset_id) && ((o.summary?.days ?? 0) >= 4 || (o.summary?.hours ?? 0) >= 6 || (part.type === 'tool-get_air_quality' && (o.days?.length ?? 0) >= 2));
+}
+
 /**
  * What to offer under the latest answer, read from the answer itself (no extra model call):
+ * - it fetched data worth a chart but answered in text: "Show as a chart";
  * - the agent asked which place was meant: the places it found, as choices;
  * - it showed weather for a place: two or three natural next questions about that place.
  */
@@ -58,6 +67,8 @@ export function suggestionsFor(message: ChatMessage | undefined): { kind: 'place
   }
 
   if (!shown.length) {
+    // Data that could be a chart but was answered in text (for example "text only"): offer the chart.
+    if (message.parts.some(chartable)) return { kind: 'next', items: [{ label: 'Show as a chart', prompt: 'Show that as a chart' }] };
     const lookup = message.parts.findLast((p) => p.type === 'tool-find_place' && p.state === 'output-available');
     const matches = lookup?.type === 'tool-find_place' && lookup.state === 'output-available' ? lookup.output.matches : [];
     if (matches.length < 2) return null;

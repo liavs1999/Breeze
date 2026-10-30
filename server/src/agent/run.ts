@@ -72,7 +72,11 @@ export async function startAnswer({ chatId, messages, choice, units, userTimezon
       maxRetries: 1,
       providerOptions: { google: { thinkingConfig: { thinkingLevel: 'low' } } },
       experimental_transform: smoothStream({ delayInMs: 8, chunking: 'word' }),
-      prepareStep: ({ steps }) => chartReminder(steps, instructions({ units, userTimezone })),
+      prepareStep: ({ steps }) => {
+        const rule = chartRule(steps, instructions({ units, userTimezone }), wantsTextOnly(messages));
+        if (rule) log('agent.chart_rule', { chat: chatId, step: steps.length });
+        return rule;
+      },
       onStepEnd: (step) =>
         log('agent.step', {
           chat: chatId,
@@ -118,22 +122,39 @@ export async function startAnswer({ chatId, messages, choice, units, userTimezon
 
 const DATA_TOOLS = new Set(['get_forecast', 'get_history', 'get_air_quality']);
 
+/** "Text only", "no chart", "without a graph", "just tell me": the user does not want a chart. */
+const TEXT_ONLY = /\b(text only|only text|in words|no (charts?|graphs?|visuals?)|without (a |any )?(charts?|graphs?)|just (tell|say|write))\b/i;
+
+export function wantsTextOnly(messages: ChatMessage[]): boolean {
+  const last = [...messages].reverse().find((m) => m.role === 'user');
+  return TEXT_ONLY.test(last?.parts.map((p) => (p.type === 'text' ? p.text : '')).join(' ') ?? '');
+}
+
+type StepInfo = { toolCalls: { toolName: string }[]; toolResults: { toolName: string; output: unknown }[] };
+
 /**
- * The chart skill's reminder: when the fetched data qualifies for a chart (4+ days, 6+ hours, or
- * several places) and no chart was drawn yet, the next step's instructions restate the rule. The
- * agent still decides (text-only requests stay text-only); this keeps smaller models consistent.
+ * The chart skill's enforcement. When this answer fetched data that qualifies for a chart (4+ days,
+ * 6+ hours, or 2+ days of air quality) and no chart was drawn yet, the next step must call show_chart:
+ * the agent still picks the kind and the server still checks it, but it cannot skip the chart. A
+ * text-only request is never forced, and once show_chart was called (even if rejected) the agent is
+ * free again, so a rejected chart ends in a text answer instead of a loop.
  */
-function chartReminder(steps: { toolCalls: { toolName: string }[]; toolResults: { toolName: string; output: unknown }[] }[], base: string) {
-  if (steps.some((s) => s.toolCalls.some((c) => c.toolName === 'show_chart'))) return undefined;
+export function chartRule(steps: StepInfo[], base: string, textOnly: boolean) {
+  if (textOnly || steps.some((s) => s.toolCalls.some((c) => c.toolName === 'show_chart'))) return undefined;
   const qualifying = steps
     .flatMap((s) => s.toolResults)
     .filter((r) => DATA_TOOLS.has(r.toolName))
-    .map((r) => r.output as { dataset_id?: string; summary?: { days?: number; hours?: number }; days?: unknown[] })
-    .filter((o) => o?.dataset_id && ((o.summary?.days ?? 0) >= 4 || (o.summary?.hours ?? 0) >= 6 || (o.days?.length ?? 0) >= 2));
+    .map((r) => ({ tool: r.toolName, ...(r.output as { dataset_id?: string; summary?: { days?: number; hours?: number }; days?: unknown[] }) }))
+    .filter(
+      (o) =>
+        o.dataset_id &&
+        ((o.summary?.days ?? 0) >= 4 || (o.summary?.hours ?? 0) >= 6 || (o.tool === 'get_air_quality' && (o.days?.length ?? 0) >= 2)),
+    );
   if (!qualifying.length) return undefined;
   const ids = qualifying.map((o) => o.dataset_id).join(', ');
   return {
-    instructions: `${base}\n\nReminder (chart rule): the data you fetched (${ids}) qualifies for a chart. Unless the user asked for text only, call show_chart with the fitting kind before you write the answer.`,
+    instructions: `${base}\n\nChart rule: the data you fetched (${ids}) is a pattern over time or a comparison, so this answer comes with a chart. Call show_chart now with the kind that fits (compare for several places, anomaly for data compared with normal), then write the answer.`,
+    toolChoice: { type: 'tool' as const, toolName: 'show_chart' as const },
   };
 }
 

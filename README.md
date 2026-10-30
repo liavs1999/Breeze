@@ -60,6 +60,10 @@ the model.
 **No chart** for a single value or "right now" (a current-conditions card instead), for three or fewer data points,
 or for follow-ups that bring no new data. Every chart has a **Data** toggle with the same values as a table.
 
+The rule is enforced, not just suggested: when an answer fetched data like this and no chart was drawn, the agent's
+next step must call `show_chart`. Add *"text only"* to a question to skip the chart; the answer then offers
+**Show as a chart**.
+
 ## How it works
 
 - **Agent:** an [AI SDK](https://ai-sdk.dev) tool loop with six tools (find a place, current conditions, forecast,
