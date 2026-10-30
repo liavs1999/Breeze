@@ -12,6 +12,8 @@ const usable = (r: KeyCheckResult | undefined): r is KeyCheckResult => r?.status
  * "Model & key": pick a provider, paste a key, and check it against every model the provider offers
  * (one tiny request each, shown as each one answers). The models that work can be picked; the key and
  * the chosen model are saved in this browser and travel to the server only as headers on chat requests.
+ * A pasted key is checked at once and, when it works, saved with the current model (or the first that
+ * works), and the panel closes onto the chat input.
  */
 export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => void }) {
   const { settings, apiKey } = useSettings();
@@ -55,33 +57,44 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
     setRequestError(null);
   }
 
-  function check() {
-    if (!effectiveKey) return;
+  /** Checks every model. With `autoSave` (a pasted key), saves as soon as a good model is known. */
+  function check(keyToCheck = effectiveKey, autoSave = false) {
+    if (!keyToCheck) return;
     reset();
     const id = run.current;
     const list = [...new Set([...info.models, ...(extra.trim() ? [extra.trim()] : [])])];
     const current = savedHere ? savedModel : info.defaultModel;
+    const found: Record<string, KeyCheckResult> = {};
     setModels(list);
     for (const model of list) {
       api
-        .checkKey({ provider, key: effectiveKey, model })
+        .checkKey({ provider, key: keyToCheck, model })
         .catch((error): KeyCheckResult => ({ provider, model, status: 'error', message: error instanceof ApiError ? error.message : 'The check failed.' }))
         .then((r) => {
           if (run.current !== id) return;
+          found[model] = r;
           setResults((prev) => ({ ...prev, [model]: r }));
           if (r.status === 'error' && /too many/i.test(r.message)) setRequestError(r.message);
           // Until the user picks: the current model if it works, otherwise the first one that does.
           if (!picked.current && r.status === 'ok') setSelected((s) => (s && s === current ? s : model === current || !s ? model : s));
+          if (!autoSave || picked.current) return;
+          // The current model works: done. Otherwise wait for all, then take the first that works.
+          const done = list.every((m) => found[m]);
+          const best = found[current]?.status === 'ok' ? found[current] : done ? list.map((m) => found[m]).find((x) => x.status === 'ok') : undefined;
+          if (best) save(best, keyToCheck);
         });
     }
   }
 
-  function save() {
-    if (!usable(choice)) return;
-    updateSettings({ provider, model: choice.model });
-    saveKey(effectiveKey, remember);
-    setKeyResult(choice);
+  function save(result = choice, keyToSave = effectiveKey) {
+    if (!usable(result)) return;
+    run.current++; // ignore checks still on their way
+    updateSettings({ provider, model: result.model });
+    saveKey(keyToSave, remember);
+    setKeyResult(result);
     onClose();
+    // Straight to asking: the chat input, once the panel has closed and returned focus.
+    setTimeout(() => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Message"]')?.focus(), 250);
   }
 
   return (
@@ -116,6 +129,13 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
             reset();
           }}
           onKeyDown={(e) => e.key === 'Enter' && void check()}
+          onPaste={(e) => {
+            const pasted = e.clipboardData.getData('text').trim();
+            if (!pasted) return;
+            e.preventDefault();
+            setKey(pasted);
+            check(pasted, true);
+          }}
           autoComplete="off"
           spellCheck={false}
           description={
@@ -184,11 +204,11 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
             <span />
           )}
           <Group gap="xs">
-            <Button variant={models && !rejection ? 'default' : 'filled'} onClick={check} loading={checking} disabled={!effectiveKey}>
+            <Button variant={models && !rejection ? 'default' : 'filled'} onClick={() => check()} loading={checking} disabled={!effectiveKey}>
               {models ? 'Check again' : 'Check models'}
             </Button>
             {models && !rejection && (
-              <Button onClick={save} disabled={!usable(choice)}>
+              <Button onClick={() => save()} disabled={!usable(choice)}>
                 Save
               </Button>
             )}

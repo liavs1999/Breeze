@@ -218,3 +218,23 @@ test('the key panel shows which models a key can use, and saves the one picked',
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('breeze:settings') ?? '{}').model)).toBe('gemini-3.5-flash-lite');
 });
+
+test('a pasted key that works is saved, and the panel closes onto the chat input', async ({ page }) => {
+  await page.route('**/api/keys/check', async (route) => {
+    const { model } = route.request().postDataJSON();
+    const works = model !== 'gemini-3.8-flash';
+    await route.fulfill({ json: { provider: 'google', model, status: works ? 'ok' : 'no_model_access', message: '', latencyMs: 500 } });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: /demo key/i }).click();
+  await page.getByLabel('API key').focus();
+  await page.getByLabel('API key').evaluate((input) => {
+    const data = new DataTransfer();
+    data.setData('text/plain', 'test-key-0000000000');
+    input.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
+  });
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByLabel('Message')).toBeFocused();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('breeze:settings') ?? '{}').model)).toBe('gemini-3.6-flash');
+  expect(await page.evaluate(() => localStorage.getItem('breeze:key'))).toBe('test-key-0000000000');
+});
