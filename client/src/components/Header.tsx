@@ -6,7 +6,7 @@ import { modelName, PROVIDER_INFO, type ChatSummary } from '@breeze/shared';
 import { api } from '../lib/api';
 import { isCurrentChatEmpty } from '../lib/currentChat';
 import { maskKey, updateSettings, useSettings } from '../lib/settings';
-import { useAppStatus } from '../lib/status';
+import { serverKeyFor, useAppStatus } from '../lib/status';
 import { Logo } from './Logo';
 
 export function Header({ onOpenKeyPanel }: { onOpenKeyPanel: () => void }) {
@@ -75,7 +75,7 @@ export function Header({ onOpenKeyPanel }: { onOpenKeyPanel: () => void }) {
 function KeyBadge({ onClick }: { onClick: () => void }) {
   const { health, key, serverReachable } = useAppStatus();
   const { settings, apiKey } = useSettings();
-  const env = health?.serverKey;
+  const env = serverKeyFor(health, settings.provider);
 
   let color = 'gray';
   let label = 'Add API key';

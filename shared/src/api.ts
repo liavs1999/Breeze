@@ -70,10 +70,10 @@ export const FALLBACK_MODELS: Partial<Record<ProviderId, string[]>> = {
 export interface Health {
   ok: true;
   /**
-   * The key in server/.env, if there is one: its provider, its model and its last four characters,
-   * so it can be recognized. Never the key itself.
+   * The keys in server/.env, one per provider: the provider, its default model and the key's last four
+   * characters, so it can be recognized. Never the key itself.
    */
-  serverKey: { provider: ProviderId; model: string; keyHint: string } | null;
+  serverKeys: { provider: ProviderId; model: string; keyHint: string }[];
   faultsEnabled: boolean;
   version: string;
 }

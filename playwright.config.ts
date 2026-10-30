@@ -23,7 +23,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: `npm run build -w client && API_PORT=${PORT} LLM_PROVIDER=scripted ALLOW_FAULTS=true DB_PATH=${db} npx tsx server/src/index.ts`,
+    command: `npm run build -w client && API_PORT=${PORT} SCRIPTED_MODEL=true ALLOW_FAULTS=true DB_PATH=${db} npx tsx server/src/index.ts`,
     url: `http://localhost:${PORT}/api/health`,
     reuseExistingServer: false,
     timeout: 120_000,

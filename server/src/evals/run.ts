@@ -3,8 +3,9 @@
  * stream), and checks for each case: the chart decision and kind, the tools used, required mentions,
  * and grounding (every number in the answer appears in a tool result).
  *
- *   npm run evals                 all cases (needs a key in server/.env)
- *   npm run evals -- compare rain only cases whose id contains "compare" or "rain"
+ *   npm run evals                                 all cases, with the first key in server/.env
+ *   npm run evals -- compare rain                 only cases whose id contains "compare" or "rain"
+ *   npm run evals -- --provider anthropic --model claude-haiku-4-5-20251001
  */
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -17,10 +18,19 @@ const { startAnswer } = await import('../agent/run');
 const { CASES } = await import('./cases');
 const { getChat } = await import('../db');
 
-if (!config.serverKey) {
-  console.error('No key: set LLM_PROVIDER and a key in server/.env (see .env.example).');
+const args = process.argv.slice(2);
+const option = (name: string) => {
+  const i = args.indexOf(`--${name}`);
+  return i >= 0 ? args.splice(i, 2)[1] : undefined;
+};
+const wantProvider = option('provider');
+const wantModel = option('model');
+const key = config.serverKeys.find((k) => !wantProvider || k.provider === wantProvider);
+if (!key) {
+  console.error(`No ${wantProvider ?? 'LLM'} key in server/.env (see .env.example).`);
   process.exit(1);
 }
+const choice = { ...key, model: wantModel ?? key.model, origin: 'server' as const };
 
 interface Observed {
   tools: string[];
@@ -38,7 +48,7 @@ async function runTurn(chatId: string, text: string, imperial: boolean, history:
   const run = await startAnswer({
     chatId,
     messages,
-    choice: { ...config.serverKey!, origin: 'server' },
+    choice,
     units: imperial ? 'imperial' : 'metric',
     faults: new Set(),
   });
@@ -89,10 +99,10 @@ function fahrenheitForms(toolText: string): string {
   return [...toolText.matchAll(/-?\d+(?:\.\d+)?/g)].map((m) => (Number(m[0]) * 1.8 + 32).toFixed(0)).join(' ');
 }
 
-const filters = process.argv.slice(2);
+const filters = args; // what is left after the options
 const cases = CASES.filter((c) => !filters.length || filters.some((f) => c.id.includes(f)));
 const results: any[] = [];
-console.log(`Running ${cases.length} cases with ${config.serverKey.provider}/${config.serverKey.model}\n`);
+console.log(`Running ${cases.length} cases with ${choice.provider}/${choice.model}\n`);
 
 /** Free tiers allow only a few requests per minute: pause between cases, and retry a rate-limited case once. */
 const PAUSE_MS = Number(process.env.EVAL_PAUSE_MS ?? 4000);
@@ -144,7 +154,7 @@ const passed = results.filter((r) => r.pass).length;
 console.log(`\n${passed}/${results.length} passed`);
 const dir = resolve(SERVER_ROOT, 'src/evals/results');
 mkdirSync(dir, { recursive: true });
-const file = join(dir, `${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}-${config.serverKey.model}.json`);
-writeFileSync(file, JSON.stringify({ model: config.serverKey.model, passed, total: results.length, results }, null, 2));
+const file = join(dir, `${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}-${choice.model.replace(/\//g, '_')}.json`);
+writeFileSync(file, JSON.stringify({ model: choice.model, passed, total: results.length, results }, null, 2));
 console.log(`Saved ${file}`);
 process.exit(passed === results.length ? 0 : 1);

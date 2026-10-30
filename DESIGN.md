@@ -67,8 +67,9 @@ every number in the answer appears in the fetched data.
 
 ## Keys and privacy
 
-- A key is either in `server/.env` (it never reaches the browser) or pasted in the app (kept in the browser, sent as a
-  header with each question, never stored or logged on the server). Only the last four characters are ever shown.
+- A key is either in `server/.env`, one per provider (it never reaches the browser), or pasted in the app (kept in the
+  browser, sent as a header with each question, never stored or logged on the server). Only the last four characters
+  are ever shown. With several keys in the file, the provider picked in the app decides which one answers.
 - The key panel checks every model of the provider with one tiny request each, shows which ones work, and keeps the
   last check so it can be shown again without spending quota.
 - Each browser has an anonymous id: it lists, continues and deletes only its own chats. A chat link opens read-only for

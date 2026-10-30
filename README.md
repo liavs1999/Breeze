@@ -20,8 +20,8 @@ npm run dev                           # → http://localhost:5180
 ```
 
 Open http://localhost:5180, click **Add API key** at the top right and paste your key. It is checked at once and
-stays in your browser. To keep it in a file instead, run `cp server/.env.example server/.env`, add the key there, and
-start again.
+stays in your browser. To keep keys in a file instead, run `cp server/.env.example server/.env`, fill in one or more,
+and start again; with several, pick the one that answers under **Model & key**.
 
 | | Command | URL |
 |---|---|---|

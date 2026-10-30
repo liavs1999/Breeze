@@ -2,7 +2,7 @@ import type { LanguageModelV4, LanguageModelV4Prompt, LanguageModelV4StreamPart 
 import { sleep } from '../context';
 
 /**
- * A deterministic stand-in for the LLM, used by the end-to-end tests (LLM_PROVIDER=scripted, never in
+ * A deterministic stand-in for the LLM, used by the end-to-end tests (SCRIPTED_MODEL=true, never in
  * production). It drives the real tools and chart rules: forecast (or current conditions for "now"
  * questions) → show_chart → an answer streamed slowly enough for a test to reload mid-answer.
  */

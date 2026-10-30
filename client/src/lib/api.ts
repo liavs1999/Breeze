@@ -92,4 +92,4 @@ export function parseChatError(error: Error | undefined): { code: string; messag
 }
 
 /** Errors the user fixes in the key panel. */
-export const KEY_ERRORS = new Set(['no_key', 'invalid_key', 'no_model_access', 'server_key_limit']);
+export const KEY_ERRORS = new Set(['no_key', 'invalid_key', 'no_model_access']);

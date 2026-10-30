@@ -4,7 +4,7 @@ import { IconAlertTriangle, IconCheck, IconKey, IconRefresh } from '@tabler/icon
 import { PROVIDER_INFO, PROVIDERS, type KeyCheckResult, type ProviderId } from '@breeze/shared';
 import { api, ApiError } from '../lib/api';
 import { clearKey, maskKey, saveKey, updateSettings, useSettings } from '../lib/settings';
-import { setKeyResult, useAppStatus } from '../lib/status';
+import { serverKeyFor, setKeyResult, useAppStatus } from '../lib/status';
 import { read, write } from '../lib/storage';
 
 const usable = (r: KeyCheckResult | undefined): r is KeyCheckResult => r?.status === 'ok' || r?.status === 'rate_limited';
@@ -32,14 +32,14 @@ function storeCheck(id: string, check: ModelCheck | null) {
 }
 
 /**
- * "Model & key": the key in use (pasted in this browser, or from server/.env) and the models it can
+ * "Model & key": the key in use (pasted in this browser, or one from server/.env) and the models it can
  * use, from the last check. Pasting a key checks it at once; once a model works the key is saved with
  * it. Clicking a working model switches to it immediately. The panel closes only with Done.
  */
 export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => void }) {
   const { settings, apiKey } = useSettings();
   const { health } = useAppStatus();
-  const env = health?.serverKey ?? null;
+  const envKeys = health?.serverKeys ?? [];
   const [provider, setProvider] = useState<ProviderId>(settings.provider);
   const [typed, setTyped] = useState('');
   const [remember, setRemember] = useState(settings.remember);
@@ -52,7 +52,7 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
 
   useEffect(() => {
     if (!opened) return;
-    setProvider(apiKey || !env ? settings.provider : env.provider);
+    setProvider(apiKey ? settings.provider : serverKeyFor(health, settings.provider)?.provider ?? settings.provider);
     setRemember(settings.remember);
     setTyped('');
     setLive(null);
@@ -61,10 +61,11 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
   }, [opened]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const info = PROVIDER_INFO[provider];
+  const env = envKeys.find((k) => k.provider === provider) ?? null;
   const key = typed.trim();
   const savedHere = Boolean(apiKey) && provider === settings.provider;
-  // The key in server/.env answers when no key is pasted in this browser.
-  const envHere = !apiKey && env?.provider === provider;
+  // A key in server/.env answers when no key is pasted in this browser.
+  const envHere = !apiKey && Boolean(env);
   const pastedId = (k: string) => `pasted:${provider}:${maskKey(k)}`;
   const activeId = key ? pastedId(key) : savedHere ? pastedId(apiKey) : envHere && env ? `env:${provider}:${env.keyHint}` : null;
   const shown = live?.id === activeId ? live : activeId ? savedChecks()[activeId] : undefined;
@@ -128,6 +129,10 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
       setTyped('');
     }
     if (newKey || savedHere) setKeyResult(result);
+    flashSaved();
+  }
+
+  function flashSaved() {
     setSavedNote(true);
     setTimeout(() => setSavedNote(false), 2000);
   }
@@ -146,7 +151,7 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
       <Stack gap="md">
         <Select
           label="Provider"
-          data={PROVIDERS.map((p) => ({ value: p, label: PROVIDER_INFO[p].label }))}
+          data={PROVIDERS.map((p) => ({ value: p, label: `${PROVIDER_INFO[p].label}${envKeys.some((k) => k.provider === p) ? ' · key in server/.env' : ''}` }))}
           value={provider}
           onChange={(v) => {
             if (!v) return;
@@ -154,6 +159,11 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
             setProvider(v as ProviderId);
             setTyped('');
             setLive(null);
+            // Choosing a provider whose key is in server/.env switches to that key, with its default model.
+            if (!apiKey && envKeys.some((k) => k.provider === v) && v !== settings.provider) {
+              updateSettings({ provider: v as ProviderId, model: '' });
+              flashSaved();
+            }
           }}
           allowDeselect={false}
         />
@@ -300,7 +310,8 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
                 clearKey();
                 setTyped('');
                 setLive(null);
-                if (env) setProvider(env.provider);
+                const fallback = serverKeyFor(health, settings.provider);
+                if (fallback) setProvider(fallback.provider);
               }}
             >
               Remove pasted key

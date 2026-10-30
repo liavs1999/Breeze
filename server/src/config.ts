@@ -12,7 +12,7 @@ if (existsSync(envFile)) process.loadEnvFile(envFile);
 const env = process.env;
 const isProduction = env.NODE_ENV === 'production';
 
-/** Provider-specific key variables, plus one generic LLM_API_KEY that works for any provider. */
+/** The variable that holds each provider's key in server/.env. */
 const KEY_VARS: Record<ProviderId, string> = {
   google: 'GOOGLE_GENERATIVE_AI_API_KEY',
   groq: 'GROQ_API_KEY',
@@ -20,15 +20,21 @@ const KEY_VARS: Record<ProviderId, string> = {
   openai: 'OPENAI_API_KEY',
 };
 
-function serverKey(): { provider: ProviderId; key: string; model: string } | null {
-  // The scripted test model (end-to-end tests): no key, never in production.
-  if (env.LLM_PROVIDER === 'scripted' && !isProduction) return { provider: 'google', key: 'scripted', model: 'scripted' };
-  const named = env.LLM_PROVIDER as ProviderId | undefined;
-  const provider = named && PROVIDERS.includes(named) ? named : PROVIDERS.find((p) => env[KEY_VARS[p]]);
-  if (!provider) return null;
-  const key = env.LLM_API_KEY || env[KEY_VARS[provider]];
-  if (!key) return null;
-  return { provider, key, model: env.LLM_MODEL || PROVIDER_INFO[provider].defaultModel };
+export interface ServerKey {
+  provider: ProviderId;
+  key: string;
+  /** The model used unless another is picked in the app. */
+  model: string;
+}
+
+/**
+ * The keys in server/.env, one per provider; the app lets the user pick which one answers. The
+ * end-to-end tests set SCRIPTED_MODEL=true instead: a deterministic stand-in model with no key
+ * (never in production).
+ */
+function serverKeys(): ServerKey[] {
+  if (env.SCRIPTED_MODEL === 'true' && !isProduction) return [{ provider: 'google', key: 'scripted', model: 'scripted' }];
+  return PROVIDERS.filter((p) => env[KEY_VARS[p]]?.trim()).map((p) => ({ provider: p, key: env[KEY_VARS[p]]!.trim(), model: PROVIDER_INFO[p].defaultModel }));
 }
 
 const number = (name: string, fallback: number) => {
@@ -43,12 +49,7 @@ export const config = {
   dbPath: resolve(SERVER_ROOT, env.DB_PATH || 'data/app.db'),
   /** Built client, served by this server in production (one port for everything). */
   staticDir: resolve(SERVER_ROOT, env.STATIC_DIR || '../client/dist'),
-  serverKey: serverKey(),
-  /**
-   * Answers per visitor per hour on the key in server/.env. Off unless set: it only matters when the app
-   * is shared with others, so they cannot use up the owner's quota.
-   */
-  serverKeyAnswersPerHour: number('SERVER_KEY_ANSWERS_PER_HOUR', 0),
+  serverKeys: serverKeys(),
   /** Fault injection for demos and tests: on in development, off in production unless ALLOW_FAULTS=true. */
   allowFaults: env.ALLOW_FAULTS ? env.ALLOW_FAULTS === 'true' : !isProduction,
   maxAgentSteps: number('MAX_AGENT_STEPS', 8),

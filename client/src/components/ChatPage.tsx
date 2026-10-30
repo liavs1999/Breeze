@@ -79,7 +79,7 @@ function Conversation({ chatId, initial, onOpenKeyPanel }: { chatId: string; ini
     onError: (e) => {
       const { code, message } = parseChatError(e);
       if (KEY_ERRORS.has(code)) {
-        if (code !== 'no_key' && code !== 'server_key_limit') markKeyProblem(message);
+        if (code !== 'no_key') markKeyProblem(message);
         onOpenKeyPanel();
       }
     },
@@ -323,7 +323,7 @@ function Reconnecting() {
 function ErrorNotice({ code, message, onRetry, onOpenKeyPanel }: { code: string; message: string; onRetry: () => void; onOpenKeyPanel: () => void }) {
   const keyIssue = KEY_ERRORS.has(code);
   return (
-    <Alert variant="light" color={code === 'rate_limited' || code === 'server_key_limit' ? 'yellow' : 'red'} icon={<IconAlertTriangle size={18} />} className="fade-in">
+    <Alert variant="light" color={code === 'rate_limited' ? 'yellow' : 'red'} icon={<IconAlertTriangle size={18} />} className="fade-in">
       <Group justify="space-between" gap="xs">
         <Text size="sm" style={{ flex: 1, minWidth: 200 }}>
           {message}

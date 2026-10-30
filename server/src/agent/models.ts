@@ -18,8 +18,8 @@ export interface ModelChoice {
 }
 
 /**
- * A key pasted in the browser (request headers) wins; otherwise the key in server/.env, with the model
- * the browser picked for it (same provider only); otherwise null.
+ * A key pasted in the browser (request headers) wins. Otherwise a key from server/.env: the one for the
+ * provider picked in the app, or the first; with the model picked for it. Otherwise null.
  */
 export function chooseModel(headers: Headers): ModelChoice | null {
   const provider = headers.get(KEY_HEADERS.provider) as ProviderId | null;
@@ -28,11 +28,10 @@ export function chooseModel(headers: Headers): ModelChoice | null {
   if (provider && key && PROVIDERS.includes(provider)) {
     return { provider, key, model: model || PROVIDER_INFO[provider].defaultModel, origin: 'user' };
   }
-  if (config.serverKey) {
-    const picked = provider === config.serverKey.provider && model && config.serverKey.model !== 'scripted' ? model : null;
-    return { ...config.serverKey, model: picked ?? config.serverKey.model, origin: 'server' };
-  }
-  return null;
+  const env = config.serverKeys.find((k) => k.provider === provider) ?? config.serverKeys[0];
+  if (!env) return null;
+  const picked = env.provider === provider && env.model !== 'scripted' ? model : undefined;
+  return { ...env, model: picked || env.model, origin: 'server' };
 }
 
 export function baseModel(provider: ProviderId, key: string, model: string): LanguageModel {

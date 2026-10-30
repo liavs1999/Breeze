@@ -9,7 +9,7 @@ pruneCache();
 const server = serve({ fetch: app.fetch, port: config.port }, ({ port }) => {
   log('server.start', {
     port,
-    serverKey: config.serverKey ? `${config.serverKey.provider}/${config.serverKey.model}` : 'none',
+    serverKeys: config.serverKeys.map((k) => k.provider).join(', ') || 'none',
     faults: config.allowFaults,
   });
 });

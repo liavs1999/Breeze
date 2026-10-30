@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { Health, KeyCheckResult } from '@breeze/shared';
+import type { Health, KeyCheckResult, ProviderId } from '@breeze/shared';
 import { api, withRetry } from './api';
 import { getSettings } from './settings';
 
@@ -32,6 +32,15 @@ export async function loadHealth(): Promise<void> {
   } catch {
     set({ serverReachable: false });
   }
+}
+
+/**
+ * The server/.env key that answers when no key is pasted: the one for the provider picked in the app,
+ * otherwise the first (the server makes the same choice).
+ */
+export function serverKeyFor(health: Health | null, provider: ProviderId) {
+  const keys = health?.serverKeys ?? [];
+  return keys.find((k) => k.provider === provider) ?? keys[0] ?? null;
 }
 
 let checkSeq = 0;
