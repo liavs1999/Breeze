@@ -1,67 +1,98 @@
-import { useEffect, useState } from 'react';
-import { Alert, Anchor, Autocomplete, Button, Checkbox, Group, Modal, PasswordInput, Select, Stack, Text } from '@mantine/core';
-import { IconAlertTriangle, IconCircleCheck, IconInfoCircle, IconKey } from '@tabler/icons-react';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Anchor, Badge, Button, Checkbox, Group, Loader, Modal, PasswordInput, Radio, Select, Stack, Text, TextInput } from '@mantine/core';
+import { IconAlertTriangle, IconInfoCircle, IconKey } from '@tabler/icons-react';
 import { PROVIDER_INFO, PROVIDERS, type KeyCheckResult, type ProviderId } from '@wwa/shared';
 import { api, ApiError } from '../lib/api';
 import { clearKey, maskKey, saveKey, updateSettings, useSettings } from '../lib/settings';
 import { setKeyResult, useAppStatus } from '../lib/status';
 
+const usable = (r: KeyCheckResult | undefined): r is KeyCheckResult => r?.status === 'ok' || r?.status === 'rate_limited';
+
 /**
- * "Model & key": pick a provider, paste a key, check it with one tiny request. The key stays in this
- * browser and travels to the server only as a header on chat requests.
+ * "Model & key": pick a provider, paste a key, and check it against every model the provider offers
+ * (one tiny request each, shown as each one answers). The models that work can be picked; the key and
+ * the chosen model are saved in this browser and travel to the server only as headers on chat requests.
  */
 export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => void }) {
   const { settings, apiKey } = useSettings();
   const { health } = useAppStatus();
   const [provider, setProvider] = useState<ProviderId>(settings.provider);
-  const [model, setModel] = useState(settings.model);
   const [key, setKey] = useState('');
+  const [extra, setExtra] = useState('');
   const [remember, setRemember] = useState(settings.remember);
-  const [checking, setChecking] = useState(false);
-  const [result, setResult] = useState<KeyCheckResult | null>(null);
+  /** The models being checked, in order, and each one's result once it arrives. */
+  const [models, setModels] = useState<string[] | null>(null);
+  const [results, setResults] = useState<Record<string, KeyCheckResult>>({});
+  const [selected, setSelected] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
+  const run = useRef(0);
+  const picked = useRef(false);
 
   useEffect(() => {
     if (!opened) return;
     setProvider(settings.provider);
-    setModel(settings.model);
     setRemember(settings.remember);
     setKey('');
-    setResult(null);
-    setRequestError(null);
+    setExtra('');
+    reset();
   }, [opened]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const info = PROVIDER_INFO[provider];
-  const effectiveKey = key.trim() || (provider === settings.provider ? apiKey : '');
+  const savedHere = provider === settings.provider && Boolean(apiKey);
+  const effectiveKey = key.trim() || (savedHere ? apiKey : '');
+  const savedModel = settings.model || PROVIDER_INFO[settings.provider].defaultModel;
+  const checking = Boolean(models && models.some((m) => !results[m]));
+  // A rejected key is rejected for every model: say it once instead of on each row.
+  const rejection = Object.values(results).find((r) => r.status === 'invalid_key');
+  const choice = selected ? results[selected] : undefined;
 
-  async function check() {
-    if (!effectiveKey) return;
-    setChecking(true);
-    setResult(null);
+  function reset() {
+    run.current++;
+    picked.current = false;
+    setModels(null);
+    setResults({});
+    setSelected(null);
     setRequestError(null);
-    try {
-      const r = await api.checkKey({ provider, key: effectiveKey, model: model.trim() || undefined });
-      setResult(r);
-      // A key that works (or only is rate-limited right now) is saved right away.
-      if (r.status === 'ok' || r.status === 'rate_limited') {
-        updateSettings({ provider, model: model.trim() });
-        saveKey(effectiveKey, remember);
-        setKeyResult(r);
-        setKey('');
-      }
-    } catch (error) {
-      setRequestError(error instanceof ApiError ? error.message : 'The check failed. Try again.');
-    } finally {
-      setChecking(false);
+  }
+
+  function check() {
+    if (!effectiveKey) return;
+    reset();
+    const id = run.current;
+    const list = [...new Set([...info.models, ...(extra.trim() ? [extra.trim()] : [])])];
+    const current = savedHere ? savedModel : info.defaultModel;
+    setModels(list);
+    for (const model of list) {
+      api
+        .checkKey({ provider, key: effectiveKey, model })
+        .catch((error): KeyCheckResult => ({ provider, model, status: 'error', message: error instanceof ApiError ? error.message : 'The check failed.' }))
+        .then((r) => {
+          if (run.current !== id) return;
+          setResults((prev) => ({ ...prev, [model]: r }));
+          if (r.status === 'error' && /too many/i.test(r.message)) setRequestError(r.message);
+          // Until the user picks: the current model if it works, otherwise the first one that does.
+          if (!picked.current && r.status === 'ok') setSelected((s) => (s && s === current ? s : model === current || !s ? model : s));
+        });
     }
+  }
+
+  function save() {
+    if (!usable(choice)) return;
+    updateSettings({ provider, model: choice.model });
+    saveKey(effectiveKey, remember);
+    setKeyResult(choice);
+    onClose();
   }
 
   return (
     <Modal opened={opened} onClose={onClose} title={<Group gap={8}><IconKey size={18} stroke={1.6} /><Text fw={600}>Model & key</Text></Group>} size="md">
       <Stack gap="md">
         <Text size="sm" c="dimmed">
-          Use your own key from any of these providers.{' '}
-          {health?.serverKey ? 'Without one, the demo key answers (limited per hour).' : 'A key is needed to chat.'}
+          {apiKey
+            ? `Using your ${PROVIDER_INFO[settings.provider].label} key ${maskKey(apiKey)} with ${savedModel}.`
+            : health?.serverKey
+              ? 'Without your own key, the demo key answers (limited per hour).'
+              : 'A key is needed to chat.'}
         </Text>
 
         <Select
@@ -71,17 +102,19 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
           onChange={(v) => {
             if (!v) return;
             setProvider(v as ProviderId);
-            setModel('');
-            setResult(null);
+            reset();
           }}
           allowDeselect={false}
         />
 
         <PasswordInput
           label="API key"
-          placeholder={provider === settings.provider && apiKey ? `Saved key ${maskKey(apiKey)}, paste to replace` : 'Paste your key'}
+          placeholder={savedHere ? `Saved key ${maskKey(apiKey)}, paste to replace` : 'Paste your key'}
           value={key}
-          onChange={(e) => setKey(e.currentTarget.value)}
+          onChange={(e) => {
+            setKey(e.currentTarget.value);
+            reset();
+          }}
           onKeyDown={(e) => e.key === 'Enter' && void check()}
           autoComplete="off"
           spellCheck={false}
@@ -96,23 +129,44 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
           }
         />
 
-        <Autocomplete
-          label="Model"
-          placeholder={info.defaultModel}
-          data={info.models}
-          value={model}
-          onChange={setModel}
-          description="Leave empty for the default. Any model id the provider offers works."
+        <TextInput
+          label="Another model"
+          placeholder="Optional model id, checked with the others"
+          value={extra}
+          onChange={(e) => setExtra(e.currentTarget.value)}
+          onKeyDown={(e) => e.key === 'Enter' && void check()}
+          spellCheck={false}
         />
 
-        <Checkbox label="Remember on this device" checked={remember} onChange={(e) => setRemember(e.currentTarget.checked)} description="Off: the key is kept for this tab only." />
-
-        {result && <CheckResult result={result} />}
+        {rejection && (
+          <Alert color="red" variant="light" icon={<IconAlertTriangle size={18} />} title="Key rejected">
+            {rejection.message}
+          </Alert>
+        )}
+        {models && !rejection && (
+          <Radio.Group
+            label="Models"
+            description="Pick the model to answer with."
+            value={selected}
+            onChange={(v) => {
+              picked.current = true;
+              setSelected(v);
+            }}
+          >
+            <Stack gap={6} mt={8}>
+              {models.map((m) => (
+                <ModelRow key={m} model={m} result={results[m]} isDefault={m === info.defaultModel} />
+              ))}
+            </Stack>
+          </Radio.Group>
+        )}
         {requestError && (
           <Alert color="red" variant="light" icon={<IconAlertTriangle size={18} />}>
             {requestError}
           </Alert>
         )}
+
+        <Checkbox label="Remember on this device" checked={remember} onChange={(e) => setRemember(e.currentTarget.checked)} description="Off: the key is kept for this tab only." />
 
         <Group justify="space-between">
           {apiKey ? (
@@ -121,7 +175,7 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
               color="red"
               onClick={() => {
                 clearKey();
-                setResult(null);
+                reset();
               }}
             >
               Remove saved key
@@ -130,18 +184,21 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
             <span />
           )}
           <Group gap="xs">
-            <Button variant="default" onClick={onClose}>
-              Close
+            <Button variant={models && !rejection ? 'default' : 'filled'} onClick={check} loading={checking} disabled={!effectiveKey}>
+              {models ? 'Check again' : 'Check models'}
             </Button>
-            <Button onClick={check} loading={checking} disabled={!effectiveKey}>
-              Check and save
-            </Button>
+            {models && !rejection && (
+              <Button onClick={save} disabled={!usable(choice)}>
+                Save
+              </Button>
+            )}
           </Group>
         </Group>
 
         <Alert variant="light" color="gray" icon={<IconInfoCircle size={18} />} p="sm">
           <Text size="xs">
-            Your key stays in this browser. It is sent to this app's server with each question, used for that answer, and never stored or logged.
+            Checking sends one tiny request to each model. Your key stays in this browser: it is sent to this app's server with each question, used
+            for that answer, and never stored or logged.
           </Text>
         </Alert>
       </Stack>
@@ -149,18 +206,44 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
   );
 }
 
-function CheckResult({ result }: { result: KeyCheckResult }) {
-  const ok = result.status === 'ok';
-  const warn = result.status === 'rate_limited';
+const STATUS: Record<KeyCheckResult['status'], { color: string; label: (r: KeyCheckResult) => string }> = {
+  ok: { color: 'teal', label: (r) => `Works · ${((r.latencyMs ?? 0) / 1000).toFixed(1)} s` },
+  rate_limited: { color: 'yellow', label: (r) => (/quota/i.test(r.message) ? 'Quota used up' : 'Rate-limited now') },
+  no_model_access: { color: 'gray', label: () => 'Not available' },
+  invalid_key: { color: 'red', label: () => 'Key rejected' },
+  unreachable: { color: 'red', label: () => 'No answer' },
+  error: { color: 'red', label: () => 'Error' },
+};
+
+/** One model: its id, whether it is the default, and what the check found (the reason on hover). */
+function ModelRow({ model, result, isDefault }: { model: string; result: KeyCheckResult | undefined; isDefault: boolean }) {
+  const s = result && STATUS[result.status];
+  const ok = usable(result);
   return (
-    <Alert
-      variant="light"
-      color={ok ? 'teal' : warn ? 'yellow' : 'red'}
-      icon={ok ? <IconCircleCheck size={18} /> : <IconAlertTriangle size={18} />}
-      title={ok ? 'Key works' : warn ? 'Key works, but is rate-limited' : 'Key problem'}
-    >
-      {result.message}
-      {(ok || warn) && ' Saved.'}
-    </Alert>
+    <Radio.Card value={model} disabled={!ok} radius="md" p="sm" title={result?.message} style={{ opacity: ok || !result ? 1 : 0.6 }}>
+      <Group justify="space-between" wrap="nowrap" gap="sm">
+        <Group gap={10} wrap="nowrap" style={{ minWidth: 0 }}>
+          <Radio.Indicator disabled={!ok} />
+          <Text size="sm" fw={500} truncate>
+            {model}
+          </Text>
+          {isDefault && (
+            <Text size="xs" c="dimmed">
+              default
+            </Text>
+          )}
+        </Group>
+        {result && s ? (
+          <Badge variant="light" color={s.color} tt="none" style={{ flexShrink: 0 }}>
+            {s.label(result)}
+          </Badge>
+        ) : (
+          <Group gap={6} c="dimmed" wrap="nowrap" style={{ flexShrink: 0 }}>
+            <Loader size={12} />
+            <Text size="xs">Checking</Text>
+          </Group>
+        )}
+      </Group>
+    </Radio.Card>
   );
 }

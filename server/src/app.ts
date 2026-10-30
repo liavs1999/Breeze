@@ -25,7 +25,8 @@ const chatRequest = z.object({
 const MAX_MESSAGE_CHARS = 2000;
 
 const demoLimiter = createLimiter(config.demoAnswersPerHour, 3600_000);
-const keyCheckLimiter = createLimiter(12, 60_000);
+// The key panel checks every model of a provider at once (one request each).
+const keyCheckLimiter = createLimiter(30, 60_000);
 
 const visitor = (c: Context) =>
   c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || (c.env as any)?.incoming?.socket?.remoteAddress || 'local';

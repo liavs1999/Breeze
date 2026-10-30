@@ -95,8 +95,9 @@ test('the key panel checks a key and explains a rejected one', async ({ page }) 
   await page.goto('/');
   await page.getByRole('button', { name: /demo key/i }).click();
   await page.getByLabel('API key').fill('not-a-real-key-123456');
-  await page.getByRole('button', { name: 'Check and save' }).click();
-  await expect(page.getByText(/Key problem|rejected/i).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Check models' }).click();
+  await expect(page.getByText('Key rejected')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save' })).toHaveCount(0);
 });
 
 test('the logo always opens a fresh home page, even after chatting', async ({ page }) => {
@@ -184,4 +185,36 @@ test('a chat opened from someone else’s link is read-only and can be continued
   expect(other.url()).not.toBe(link);
   await expect(other.locator('.answer')).toContainText(END);
   await other.context().close();
+});
+
+test('the key panel shows which models a key can use, and saves the one picked', async ({ page }) => {
+  // Stand-in provider answers, one per model, arriving at different times.
+  const answers: Record<string, { status: string; message: string; latencyMs?: number; delay: number }> = {
+    'gemini-3.6-flash': { status: 'ok', message: 'Key works.', latencyMs: 900, delay: 100 },
+    'gemini-3.5-flash': { status: 'rate_limited', message: 'The key works, but its quota is used up.', delay: 50 },
+    'gemini-3.5-flash-lite': { status: 'ok', message: 'Key works.', latencyMs: 400, delay: 150 },
+    'gemini-3.8-flash': { status: 'no_model_access', message: 'This key cannot use gemini-3.8-flash.', delay: 800 },
+  };
+  await page.route('**/api/keys/check', async (route) => {
+    const { model } = route.request().postDataJSON();
+    const { delay, ...answer } = answers[model];
+    await new Promise((r) => setTimeout(r, delay));
+    await route.fulfill({ json: { provider: 'google', model, ...answer } });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: /demo key/i }).click();
+  await page.getByLabel('API key').fill('test-key-0000000000');
+  await page.getByRole('button', { name: 'Check models' }).click();
+
+  const models = page.getByRole('radiogroup', { name: 'Models' });
+  await expect(models.getByText('Works · 0.9 s')).toBeVisible();
+  await expect(models.getByText('Quota used up')).toBeVisible();
+  await expect(models.getByText('Not available')).toBeVisible();
+  await expect(models.getByRole('radio', { name: /gemini-3\.6-flash/ })).toHaveAttribute('aria-checked', 'true');
+  await expect(models.getByRole('radio', { name: /gemini-3\.8-flash/ })).toBeDisabled();
+
+  await models.getByRole('radio', { name: /gemini-3\.5-flash-lite/ }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('breeze:settings') ?? '{}').model)).toBe('gemini-3.5-flash-lite');
 });
