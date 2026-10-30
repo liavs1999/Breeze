@@ -10,7 +10,7 @@ or a comparison.
 
 ## Run it
 
-Requires Node 22.12+ and an LLM key. A free [Gemini key](https://aistudio.google.com/apikey) works; Groq, Anthropic
+Requires Node 22.12+ (or Docker, below) and an LLM key. A free [Gemini key](https://aistudio.google.com/apikey) works; Groq, Anthropic
 and OpenAI keys do too.
 
 ```bash
@@ -26,7 +26,21 @@ No key in `server/.env`? Paste one in the app under **Model & key**; it is check
 | Server only | `npm run dev -w server` | http://localhost:8787 (API) |
 | Client only | `npm run dev -w client` | http://localhost:5180 (forwards `/api` to the server) |
 | Production build | `npm run build && npm start` | http://localhost:8787 |
-| Docker | `docker compose up --build` | http://localhost:8787 |
+
+### With Docker
+
+No Node needed, only Docker. Add your key to `server/.env` as above, then:
+
+```bash
+docker compose up --build             # → http://localhost:8787
+```
+
+Chats are kept in a Docker volume between runs. Without Compose:
+
+```bash
+docker build -t breeze .
+docker run -p 8787:8787 --env-file server/.env -v breeze-data:/data breeze
+```
 
 ## When does a chart appear?
 
