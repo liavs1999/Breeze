@@ -127,7 +127,7 @@ app.post('/api/chat', async (c) => {
     const limit = demoLimiter.take(visitor(c));
     if (!limit.ok) {
       return c.json(
-        { error: 'demo_limit', message: `The demo key's limit for this hour is reached. Add your own key, or wait ${Math.ceil(limit.retryAfterS / 60)} min.` },
+        { error: 'demo_limit', message: `The server key's limit for this hour is reached. Add your own key, or wait ${Math.ceil(limit.retryAfterS / 60)} min.` },
         429,
       );
     }

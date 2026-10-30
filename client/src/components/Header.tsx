@@ -90,11 +90,11 @@ function KeyBadge({ onClick }: { onClick: () => void }) {
     } else label = 'Your key';
   } else if (health?.serverKey) {
     color = 'sky';
-    label = 'Demo key';
+    label = 'Server key';
   }
 
   return (
-    <Tooltip label={apiKey ? key.result?.message ?? 'Model and key' : health?.serverKey ? `Using the demo key (${health.serverKey.model}). Add your own any time.` : 'Add a key to start'}>
+    <Tooltip label={apiKey ? key.result?.message ?? 'Model and key' : health?.serverKey ? `Using the server key from server/.env (${health.serverKey.model}). Add your own any time.` : 'Add a key to start'}>
       <Badge
         component="button"
         onClick={onClick}

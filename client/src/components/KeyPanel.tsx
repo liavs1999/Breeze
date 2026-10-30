@@ -104,7 +104,7 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
           {apiKey
             ? `Using your ${PROVIDER_INFO[settings.provider].label} key ${maskKey(apiKey)} with ${savedModel}.`
             : health?.serverKey
-              ? 'Without your own key, the demo key answers (limited per hour).'
+              ? 'Without your own key, the server key from server/.env answers.'
               : 'A key is needed to chat.'}
         </Text>
 

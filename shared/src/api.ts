@@ -57,7 +57,7 @@ export const FALLBACK_MODELS: Partial<Record<ProviderId, string[]>> = {
 
 export interface Health {
   ok: true;
-  /** Whether the server has its own key configured (the hosted demo key). Never the key itself. */
+  /** Whether the server has its own key configured (from server/.env). Never the key itself. */
   serverKey: { provider: ProviderId; model: string } | null;
   faultsEnabled: boolean;
   version: string;

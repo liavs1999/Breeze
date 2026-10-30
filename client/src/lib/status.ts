@@ -4,7 +4,7 @@ import { api, withRetry } from './api';
 import { getSettings } from './settings';
 
 /**
- * What the header shows: whether the server is reachable, which key answers (yours or the demo key),
+ * What the header shows: whether the server is reachable, which key answers (yours or the server key),
  * and whether your key works. A saved key is checked in the background on load.
  */
 export interface AppStatus {
