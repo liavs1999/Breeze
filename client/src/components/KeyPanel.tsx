@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Anchor, Badge, Button, Checkbox, Group, Loader, Modal, PasswordInput, Radio, Select, Stack, Text, TextInput } from '@mantine/core';
+import { Alert, Anchor, Badge, Button, Checkbox, Group, Loader, Modal, Radio, Select, Stack, Text, TextInput } from '@mantine/core';
 import { IconAlertTriangle, IconInfoCircle, IconKey } from '@tabler/icons-react';
 import { PROVIDER_INFO, PROVIDERS, type KeyCheckResult, type ProviderId } from '@wwa/shared';
 import { api, ApiError } from '../lib/api';
@@ -130,7 +130,9 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
           allowDeselect={false}
         />
 
-        <PasswordInput
+        {/* A plain masked field: no button to reveal the key. */}
+        <TextInput
+          type="password"
           label="API key"
           placeholder={savedHere ? `Saved key ${maskKey(apiKey)}, paste to replace` : envHere ? `Using ${env?.keyHint} from server/.env, paste to use another` : 'Paste your key'}
           value={key}
