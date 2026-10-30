@@ -50,8 +50,8 @@ export const config = {
   /** Built client, served by this server in production (one port for everything). */
   staticDir: resolve(SERVER_ROOT, env.STATIC_DIR || '../client/dist'),
   serverKeys: serverKeys(),
-  /** Fault injection for demos and tests: on in development, off in production unless ALLOW_FAULTS=true. */
-  allowFaults: env.ALLOW_FAULTS ? env.ALLOW_FAULTS === 'true' : !isProduction,
+  /** Failure injection for the browser tests, which set ALLOW_FAULTS=true; off otherwise. */
+  allowFaults: env.ALLOW_FAULTS === 'true' && !isProduction,
   maxAgentSteps: number('MAX_AGENT_STEPS', 8),
   version: '1.0.0',
 };
