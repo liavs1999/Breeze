@@ -93,7 +93,7 @@ test('the unsent draft survives a reload', async ({ page }) => {
 
 test('the key panel checks a key and explains a rejected one', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: /server key/i }).click();
+  await page.getByRole('button', { name: /model and key/i }).click();
   await page.getByLabel('API key').fill('not-a-real-key-123456');
   await page.getByRole('button', { name: 'Check models' }).click();
   await expect(page.getByText('Key rejected')).toBeVisible();
@@ -202,7 +202,7 @@ test('the key panel shows which models a key can use, and saves the one picked',
     await route.fulfill({ json: { provider: 'google', model, ...answer } });
   });
   await page.goto('/');
-  await page.getByRole('button', { name: /server key/i }).click();
+  await page.getByRole('button', { name: /model and key/i }).click();
   await page.getByLabel('API key').fill('test-key-0000000000');
   await page.getByRole('button', { name: 'Check models' }).click();
 
@@ -226,7 +226,7 @@ test('a pasted key that works is saved, and the panel closes onto the chat input
     await route.fulfill({ json: { provider: 'google', model, status: works ? 'ok' : 'no_model_access', message: '', latencyMs: 500 } });
   });
   await page.goto('/');
-  await page.getByRole('button', { name: /server key/i }).click();
+  await page.getByRole('button', { name: /model and key/i }).click();
   await page.getByLabel('API key').focus();
   await page.getByLabel('API key').evaluate((input) => {
     const data = new DataTransfer();
@@ -237,4 +237,24 @@ test('a pasted key that works is saved, and the panel closes onto the chat input
   await expect(page.getByLabel('Message')).toBeFocused();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('breeze:settings') ?? '{}').model)).toBe('gemini-3.6-flash');
   expect(await page.evaluate(() => localStorage.getItem('breeze:key'))).toBe('test-key-0000000000');
+});
+
+test('the key in server/.env is listed like a pasted key, and only the model choice is kept', async ({ page }) => {
+  const sentKeys: unknown[] = [];
+  await page.route('**/api/keys/check', async (route) => {
+    const { model, key } = route.request().postDataJSON();
+    sentKeys.push(key);
+    await route.fulfill({ json: { provider: 'google', model, status: 'ok', message: '', latencyMs: 300 } });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: /model and key/i }).click();
+  await expect(page.getByText(/key ••••\w{4}, from server\/\.env/)).toBeVisible();
+  await page.getByRole('button', { name: 'Check models' }).click();
+  await page.getByRole('radiogroup', { name: 'Models' }).getByRole('radio', { name: /gemini-3\.5-flash-lite/ }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(sentKeys.every((k) => k === undefined)).toBe(true); // the browser never had the key
+  expect(await page.evaluate(() => localStorage.getItem('breeze:key'))).toBeNull();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('breeze:settings') ?? '{}').model)).toBe('gemini-3.5-flash-lite');
+  await expect(page.getByRole('button', { name: /model and key/i })).toHaveText('Gemini 3.5 Flash Lite');
 });

@@ -2,10 +2,10 @@ import { ActionIcon, Badge, Group, Menu, SegmentedControl, Text, Tooltip, Unstyl
 import { IconHistory, IconKey, IconMoon, IconPlus, IconSun, IconTrash } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { PROVIDER_INFO, type ChatSummary } from '@wwa/shared';
+import { modelName, PROVIDER_INFO, type ChatSummary } from '@wwa/shared';
 import { api } from '../lib/api';
 import { isCurrentChatEmpty } from '../lib/currentChat';
-import { updateSettings, useSettings } from '../lib/settings';
+import { maskKey, updateSettings, useSettings } from '../lib/settings';
 import { useAppStatus } from '../lib/status';
 import { Logo } from './Logo';
 
@@ -68,35 +68,46 @@ export function Header({ onOpenKeyPanel }: { onOpenKeyPanel: () => void }) {
   );
 }
 
-/** Which key answers and whether it works; opens the key panel. */
+/**
+ * The model that answers and whether its key works; opens the key panel. A key pasted in this browser
+ * and a key in server/.env look the same; the tooltip says where the key came from.
+ */
 function KeyBadge({ onClick }: { onClick: () => void }) {
   const { health, key, serverReachable } = useAppStatus();
   const { settings, apiKey } = useSettings();
+  const env = health?.serverKey;
 
   let color = 'gray';
   let label = 'Add API key';
+  let tip = 'Add a key to start';
   if (!serverReachable) {
     color = 'red';
     label = 'Server offline';
+    tip = 'The server cannot be reached.';
   } else if (apiKey) {
     const model = settings.model || PROVIDER_INFO[settings.provider].defaultModel;
+    tip = `Your ${PROVIDER_INFO[settings.provider].label} key ${maskKey(apiKey)}, pasted in this browser, answering with ${model}.`;
     if (key.state === 'checking') label = 'Checking key…';
-    else if (key.state === 'ok') {
-      color = 'teal';
-      label = `${model} · ready`;
-    } else if (key.state === 'problem') {
+    else if (key.state === 'problem') {
       color = key.result?.status === 'rate_limited' ? 'yellow' : 'red';
       label = key.result?.status === 'rate_limited' ? 'Key rate-limited' : 'Key problem';
-    } else label = 'Your key';
-  } else if (health?.serverKey) {
-    color = 'sky';
-    label = 'Server key';
+      tip = key.result?.message ?? tip;
+    } else {
+      color = 'teal';
+      label = modelName(model);
+    }
+  } else if (env) {
+    const model = (settings.provider === env.provider && settings.model) || env.model;
+    color = 'teal';
+    label = modelName(model);
+    tip = `Your ${PROVIDER_INFO[env.provider].label} key ${env.keyHint}, from server/.env, answering with ${model}.`;
   }
 
   return (
-    <Tooltip label={apiKey ? key.result?.message ?? 'Model and key' : health?.serverKey ? `Using the server key from server/.env (${health.serverKey.model}). Add your own any time.` : 'Add a key to start'}>
+    <Tooltip label={tip} multiline maw={300}>
       <Badge
         component="button"
+        aria-label={`Model and key: ${label}`}
         onClick={onClick}
         variant="light"
         color={color}

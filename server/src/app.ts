@@ -24,7 +24,7 @@ const chatRequest = z.object({
 });
 const MAX_MESSAGE_CHARS = 2000;
 
-const demoLimiter = createLimiter(config.demoAnswersPerHour, 3600_000);
+const serverKeyLimiter = config.serverKeyAnswersPerHour > 0 ? createLimiter(config.serverKeyAnswersPerHour, 3600_000) : null;
 // The key panel checks every model of a provider at once (one request each).
 const keyCheckLimiter = createLimiter(30, 60_000);
 
@@ -46,7 +46,9 @@ export const app = new Hono();
 app.get('/api/health', (c) =>
   c.json<Health>({
     ok: true,
-    serverKey: config.serverKey ? { provider: config.serverKey.provider, model: config.serverKey.model } : null,
+    serverKey: config.serverKey
+      ? { provider: config.serverKey.provider, model: config.serverKey.model, keyHint: `••••${config.serverKey.key.slice(-4)}` }
+      : null,
     faultsEnabled: config.allowFaults,
     version: config.version,
   }),
@@ -56,7 +58,10 @@ app.post('/api/keys/check', async (c) => {
   if (!keyCheckLimiter.take(visitor(c)).ok) return c.json({ error: 'Too many checks; wait a minute.' }, 429);
   const parsed = keyCheckRequest.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'Invalid request' }, 400);
-  const result = await checkKey(parsed.data);
+  // Without a key in the request, the key in server/.env is checked (for its own provider only).
+  const key = parsed.data.key ?? (config.serverKey?.provider === parsed.data.provider ? config.serverKey.key : undefined);
+  if (!key) return c.json({ error: 'no_key', message: 'Paste a key to check.' }, 400);
+  const result = await checkKey({ ...parsed.data, key });
   log('key.check', { provider: result.provider, model: result.model, status: result.status });
   return c.json(result);
 });
@@ -123,11 +128,11 @@ app.post('/api/chat', async (c) => {
 
   const choice = chooseModel(c.req.raw.headers);
   if (!choice) return c.json({ error: 'no_key', message: 'Add an API key to start.' }, 401);
-  if (choice.origin === 'server') {
-    const limit = demoLimiter.take(visitor(c));
+  if (choice.origin === 'server' && serverKeyLimiter) {
+    const limit = serverKeyLimiter.take(visitor(c));
     if (!limit.ok) {
       return c.json(
-        { error: 'demo_limit', message: `The server key's limit for this hour is reached. Add your own key, or wait ${Math.ceil(limit.retryAfterS / 60)} min.` },
+        { error: 'server_key_limit', message: `This key's limit for this hour is reached. Paste your own key, or wait ${Math.ceil(limit.retryAfterS / 60)} min.` },
         429,
       );
     }

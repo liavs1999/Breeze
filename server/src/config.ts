@@ -44,8 +44,11 @@ export const config = {
   /** Built client, served by this server in production (one port for everything). */
   staticDir: resolve(SERVER_ROOT, env.STATIC_DIR || '../client/dist'),
   serverKey: serverKey(),
-  /** Answers per visitor per hour when the server's own key is used (the hosted demo). */
-  demoAnswersPerHour: number('DEMO_ANSWERS_PER_HOUR', 30),
+  /**
+   * Answers per visitor per hour on the key in server/.env. Off unless set: it only matters when the app
+   * is shared with others, so they cannot use up the owner's quota.
+   */
+  serverKeyAnswersPerHour: number('SERVER_KEY_ANSWERS_PER_HOUR', 0),
   /** Fault injection for demos and tests: on in development, off in production unless ALLOW_FAULTS=true. */
   allowFaults: env.ALLOW_FAULTS ? env.ALLOW_FAULTS === 'true' : !isProduction,
   maxAgentSteps: number('MAX_AGENT_STEPS', 8),

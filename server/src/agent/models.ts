@@ -13,18 +13,25 @@ export interface ModelChoice {
   provider: ProviderId;
   key: string;
   model: string;
-  /** 'user': key from the browser; 'server': the server's own key (rate-limited per visitor). */
+  /** 'user': a key pasted in the browser; 'server': the key in server/.env. */
   origin: 'user' | 'server';
 }
 
-/** The browser's key (request headers) wins; otherwise the server's key; otherwise null. */
+/**
+ * A key pasted in the browser (request headers) wins; otherwise the key in server/.env, with the model
+ * the browser picked for it (same provider only); otherwise null.
+ */
 export function chooseModel(headers: Headers): ModelChoice | null {
   const provider = headers.get(KEY_HEADERS.provider) as ProviderId | null;
   const key = headers.get(KEY_HEADERS.key);
+  const model = headers.get(KEY_HEADERS.model)?.trim().slice(0, 120);
   if (provider && key && PROVIDERS.includes(provider)) {
-    return { provider, key, model: headers.get(KEY_HEADERS.model) || PROVIDER_INFO[provider].defaultModel, origin: 'user' };
+    return { provider, key, model: model || PROVIDER_INFO[provider].defaultModel, origin: 'user' };
   }
-  if (config.serverKey) return { ...config.serverKey, origin: 'server' };
+  if (config.serverKey) {
+    const picked = provider === config.serverKey.provider && model && config.serverKey.model !== 'scripted' ? model : null;
+    return { ...config.serverKey, model: picked ?? config.serverKey.model, origin: 'server' };
+  }
   return null;
 }
 

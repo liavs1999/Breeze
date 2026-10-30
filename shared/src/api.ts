@@ -36,7 +36,8 @@ export const KEY_HEADERS = { provider: 'x-llm-provider', key: 'x-llm-key', model
 
 export const keyCheckRequest = z.object({
   provider: z.enum(PROVIDERS),
-  key: z.string().min(8).max(400),
+  /** Omitted: check the key in server/.env (which never reaches the browser). */
+  key: z.string().min(8).max(400).optional(),
   model: z.string().max(120).optional(),
 });
 export type KeyCheckRequest = z.infer<typeof keyCheckRequest>;
@@ -50,6 +51,17 @@ export interface KeyCheckResult {
   latencyMs?: number;
 }
 
+/** A readable name for a model id: "gemini-3.6-flash" → "Gemini 3.6 Flash", "claude-haiku-4-5-20251001" → "Claude Haiku 4.5". */
+export function modelName(id: string): string {
+  const words = id
+    .replace(/^.*\//, '')
+    .replace(/-\d{8}$/, '')
+    .split('-')
+    .map((w) => (/^(gpt|oss)$/i.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)));
+  // Version numbers written with dashes ("4-5") read as "4.5".
+  return words.join(' ').replace(/\b(\d+) (\d)\b/g, '$1.$2');
+}
+
 /** Fallback models used when the chosen model is rate-limited or overloaded (server key only). */
 export const FALLBACK_MODELS: Partial<Record<ProviderId, string[]>> = {
   google: ['gemini-3.5-flash', 'gemini-3.5-flash-lite'],
@@ -57,8 +69,11 @@ export const FALLBACK_MODELS: Partial<Record<ProviderId, string[]>> = {
 
 export interface Health {
   ok: true;
-  /** Whether the server has its own key configured (from server/.env). Never the key itself. */
-  serverKey: { provider: ProviderId; model: string } | null;
+  /**
+   * The key in server/.env, if there is one: its provider, its model and its last four characters,
+   * so it can be recognized. Never the key itself.
+   */
+  serverKey: { provider: ProviderId; model: string; keyHint: string } | null;
   faultsEnabled: boolean;
   version: string;
 }

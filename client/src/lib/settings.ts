@@ -64,13 +64,16 @@ export function useSettings() {
 
 export const getSettings = () => snapshot;
 
-/** Request headers for the chat: this browser's id, the user's key (if any) and the simulated faults. */
+/**
+ * Request headers for the chat: this browser's id, the pasted key (if any), the model picked (also for
+ * the key in server/.env, which the server applies only for its own provider) and the simulated faults.
+ */
 export function requestHeaders(): Record<string, string> {
   const { settings: s, apiKey: key } = snapshot;
   const headers: Record<string, string> = { [CLIENT_HEADER]: clientId() };
-  if (key) {
+  if (key) headers[KEY_HEADERS.key] = key;
+  if (key || s.model) {
     headers[KEY_HEADERS.provider] = s.provider;
-    headers[KEY_HEADERS.key] = key;
     if (s.model) headers[KEY_HEADERS.model] = s.model;
   }
   if (s.faults.length) headers[FAULT_HEADER] = s.faults.join(',');

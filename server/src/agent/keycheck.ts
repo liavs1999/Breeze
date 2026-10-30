@@ -3,7 +3,7 @@ import { PROVIDER_INFO, type KeyCheckRequest, type KeyCheckResult } from '@wwa/s
 import { baseModel } from './models';
 
 /** One tiny request to the provider, reported in plain words. The key is not stored or logged. */
-export async function checkKey({ provider, key, model }: KeyCheckRequest): Promise<KeyCheckResult> {
+export async function checkKey({ provider, key, model }: KeyCheckRequest & { key: string }): Promise<KeyCheckResult> {
   const modelId = model?.trim() || PROVIDER_INFO[provider].defaultModel;
   const base = { provider, model: modelId };
   const started = Date.now();

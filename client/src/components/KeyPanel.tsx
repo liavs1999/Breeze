@@ -40,9 +40,16 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
   }, [opened]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const info = PROVIDER_INFO[provider];
+  const env = health?.serverKey ?? null;
+  const typed = key.trim();
   const savedHere = provider === settings.provider && Boolean(apiKey);
-  const effectiveKey = key.trim() || (savedHere ? apiKey : '');
+  // The key in server/.env answers when no key is pasted in this browser.
+  const envHere = !apiKey && env?.provider === provider;
+  /** The key to check or save; undefined means the key in server/.env (checked on the server). */
+  const browserKey = typed || (savedHere ? apiKey : undefined);
+  const canCheck = Boolean(browserKey || envHere);
   const savedModel = settings.model || PROVIDER_INFO[settings.provider].defaultModel;
+  const envModel = env ? (settings.provider === env.provider && settings.model) || env.model : '';
   const checking = Boolean(models && models.some((m) => !results[m]));
   // A rejected key is rejected for every model: say it once instead of on each row.
   const rejection = Object.values(results).find((r) => r.status === 'invalid_key');
@@ -58,12 +65,12 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
   }
 
   /** Checks every model. With `autoSave` (a pasted key), saves as soon as a good model is known. */
-  function check(keyToCheck = effectiveKey, autoSave = false) {
-    if (!keyToCheck) return;
+  function check(keyToCheck = browserKey, autoSave = false) {
+    if (!keyToCheck && !envHere) return;
     reset();
     const id = run.current;
     const list = [...new Set([...info.models, ...(extra.trim() ? [extra.trim()] : [])])];
-    const current = savedHere ? savedModel : info.defaultModel;
+    const current = keyToCheck ? (savedHere && keyToCheck === apiKey ? savedModel : info.defaultModel) : envModel;
     const found: Record<string, KeyCheckResult> = {};
     setModels(list);
     for (const model of list) {
@@ -86,12 +93,15 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
     }
   }
 
-  function save(result = choice, keyToSave = effectiveKey) {
+  function save(result = choice, keyToSave = browserKey) {
     if (!usable(result)) return;
     run.current++; // ignore checks still on their way
     updateSettings({ provider, model: result.model });
-    saveKey(keyToSave, remember);
-    setKeyResult(result);
+    // A pasted key is kept in this browser; for the key in server/.env only the model choice is.
+    if (keyToSave) {
+      saveKey(keyToSave, remember);
+      setKeyResult(result);
+    }
     onClose();
     // Straight to asking: the chat input, once the panel has closed and returned focus.
     setTimeout(() => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Message"]')?.focus(), 250);
@@ -102,9 +112,9 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
       <Stack gap="md">
         <Text size="sm" c="dimmed">
           {apiKey
-            ? `Using your ${PROVIDER_INFO[settings.provider].label} key ${maskKey(apiKey)} with ${savedModel}.`
-            : health?.serverKey
-              ? 'Without your own key, the server key from server/.env answers.'
+            ? `Your ${PROVIDER_INFO[settings.provider].label} key ${maskKey(apiKey)}, pasted in this browser, answers with ${savedModel}.`
+            : env
+              ? `Your ${PROVIDER_INFO[env.provider].label} key ${env.keyHint}, from server/.env, answers with ${envModel}.`
               : 'A key is needed to chat.'}
         </Text>
 
@@ -122,7 +132,7 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
 
         <PasswordInput
           label="API key"
-          placeholder={savedHere ? `Saved key ${maskKey(apiKey)}, paste to replace` : 'Paste your key'}
+          placeholder={savedHere ? `Saved key ${maskKey(apiKey)}, paste to replace` : envHere ? `Using ${env?.keyHint} from server/.env, paste to use another` : 'Paste your key'}
           value={key}
           onChange={(e) => {
             setKey(e.currentTarget.value);
@@ -198,13 +208,13 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
                 reset();
               }}
             >
-              Remove saved key
+              Remove pasted key
             </Button>
           ) : (
             <span />
           )}
           <Group gap="xs">
-            <Button variant={models && !rejection ? 'default' : 'filled'} onClick={() => check()} loading={checking} disabled={!effectiveKey}>
+            <Button variant={models && !rejection ? 'default' : 'filled'} onClick={() => check()} loading={checking} disabled={!canCheck}>
               {models ? 'Check again' : 'Check models'}
             </Button>
             {models && !rejection && (
@@ -217,8 +227,8 @@ export function KeyPanel({ opened, onClose }: { opened: boolean; onClose: () => 
 
         <Alert variant="light" color="gray" icon={<IconInfoCircle size={18} />} p="sm">
           <Text size="xs">
-            Checking sends one tiny request to each model. Your key stays in this browser: it is sent to this app's server with each question, used
-            for that answer, and never stored or logged.
+            Checking sends one tiny request to each model. A pasted key stays in this browser: it is sent to this app's server with each question,
+            used for that answer, and never stored or logged. A key in server/.env never reaches the browser.
           </Text>
         </Alert>
       </Stack>
