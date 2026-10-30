@@ -1,4 +1,4 @@
-import type { ChartKind } from '@wwa/shared';
+import type { ChartKind } from '@breeze/shared';
 
 /**
  * The chart-trigger and tool-choice evaluation set. Each case is one conversation (usually one turn);

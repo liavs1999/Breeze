@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import type { Fault, UnitSystem } from '@wwa/shared';
+import type { Fault, UnitSystem } from '@breeze/shared';
 
 /** Per-answer context, available to tools and the HTTP layer without threading it through every call. */
 export interface RunContext {

@@ -1,6 +1,6 @@
 import { Bar, CartesianGrid, ComposedChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { IconTemperatureMinus, IconTemperaturePlus } from '@tabler/icons-react';
-import { formatValue, type ChartOf, type UnitSystem } from '@wwa/shared';
+import { formatValue, type ChartOf, type UnitSystem } from '@breeze/shared';
 import { axisProps, dayTick, fullTime, TooltipCard, yAxisProps } from './common';
 import { Hero } from './parts';
 

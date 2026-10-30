@@ -1,4 +1,4 @@
-import { CLIENT_HEADER, type ChatSummary, type Health, type KeyCheckRequest, type KeyCheckResult } from '@wwa/shared';
+import { CLIENT_HEADER, type ChatSummary, type Health, type KeyCheckRequest, type KeyCheckResult } from '@breeze/shared';
 import { clientId } from './storage';
 import type { ChatMessage } from './types';
 

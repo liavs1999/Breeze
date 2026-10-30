@@ -10,16 +10,18 @@ or a comparison.
 
 ## Run it
 
-Requires Node 22.12+ (or Docker, below) and an LLM key. A free [Gemini key](https://aistudio.google.com/apikey) works; Groq, Anthropic
-and OpenAI keys do too.
+You need **Node 22.12+** (or only Docker, below) and an **LLM key**: a free
+[Gemini key](https://aistudio.google.com/apikey) is enough; Groq, Anthropic and OpenAI keys work too.
 
 ```bash
+git clone https://github.com/liavs1999/Breeze.git && cd Breeze
 npm install
-cp server/.env.example server/.env    # add GOOGLE_GENERATIVE_AI_API_KEY
 npm run dev                           # → http://localhost:5180
 ```
 
-No key in `server/.env`? Paste one in the app under **Model & key**; it is checked on the spot and stays in your browser.
+Open http://localhost:5180, click **Add API key** at the top right and paste your key. It is checked at once and
+stays in your browser. To keep it in a file instead, run `cp server/.env.example server/.env`, add the key there, and
+start again.
 
 | | Command | URL |
 |---|---|---|
@@ -29,17 +31,18 @@ No key in `server/.env`? Paste one in the app under **Model & key**; it is check
 
 ### With Docker
 
-No Node needed, only Docker. The key is optional here too: put it in `server/.env` as above, or paste it in the app.
+No Node needed. In the cloned folder:
 
 ```bash
 docker compose up --build             # → http://localhost:8787
 ```
 
-Chats are kept in a Docker volume between runs. Without Compose:
+Then paste your key in the app as above (or put it in `server/.env` first). Chats are kept in a Docker volume.
+Without Compose:
 
 ```bash
 docker build -t breeze .
-docker run -p 8787:8787 -v breeze-data:/data breeze    # add --env-file server/.env to use your key from the file
+docker run -p 8787:8787 -v breeze-data:/data breeze    # add --env-file server/.env to use the key from the file
 ```
 
 ## When does a chart appear?
@@ -85,4 +88,4 @@ npm run evals     # chart and grounding checks against the real model, needs a k
 
 ---
 
-Weather data by [Open-Meteo](https://open-meteo.com/) (CC BY 4.0). Design decisions are in [PLAN.md](PLAN.md).
+Weather data by [Open-Meteo](https://open-meteo.com/) (CC BY 4.0). Design decisions are in [DESIGN.md](DESIGN.md).

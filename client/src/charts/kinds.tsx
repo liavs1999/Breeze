@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { aqiLabel, describeWeatherCode, type ChartSpec, type CompareMetric, type Quantity, type UnitSystem } from '@wwa/shared';
+import { aqiLabel, describeWeatherCode, type ChartSpec, type CompareMetric, type Quantity, type UnitSystem } from '@breeze/shared';
 import { AirQualityChart } from './AirQualityChart';
 import { AnomalyChart } from './AnomalyChart';
 import { display, fullTime } from './common';

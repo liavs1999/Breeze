@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Box, Group, ScrollArea, Table, Text, UnstyledButton } from '@mantine/core';
 import { IconArrowsShuffle, IconCalendar, IconChartLine, IconClock, IconDroplet, IconLeaf, IconTable, IconTemperature, type Icon } from '@tabler/icons-react';
-import type { ChartSpec } from '@wwa/shared';
+import type { ChartSpec } from '@breeze/shared';
 import { useSettings } from '../lib/settings';
 import { renderChart } from './kinds';
 

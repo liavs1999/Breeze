@@ -14,7 +14,7 @@ const sky: MantineColorsTuple = [
   '#003e85',
 ];
 
-const font = 'system-ui, "Inter Variable", Inter, "Segoe UI", Roboto, sans-serif';
+const font = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 
 export const theme = createTheme({
   primaryColor: 'sky',

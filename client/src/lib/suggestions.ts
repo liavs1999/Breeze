@@ -1,4 +1,4 @@
-import type { ChartKind } from '@wwa/shared';
+import type { ChartKind } from '@breeze/shared';
 import type { ChatMessage } from './types';
 
 export interface Suggestion {

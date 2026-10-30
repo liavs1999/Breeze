@@ -1,6 +1,6 @@
 import { Bar, CartesianGrid, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { IconCloudRain, IconCloudSnow, IconSun } from '@tabler/icons-react';
-import { convert, type ChartOf, type UnitSystem } from '@wwa/shared';
+import { convert, type ChartOf, type UnitSystem } from '@breeze/shared';
 import { axisProps, COLORS, fullTime, hourTick, dayTick, paddedDomain, ticksFor, TooltipCard, yAxisProps } from './common';
 import { Hero, IconTick, type Conditions } from './parts';
 

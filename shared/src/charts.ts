@@ -16,7 +16,6 @@ const place = z.object({
   country: z.string(),
   timezone: z.string(),
 });
-export type ChartPlace = z.infer<typeof place>;
 
 const base = {
   title: z.string(),

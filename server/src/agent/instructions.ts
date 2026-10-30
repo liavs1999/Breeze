@@ -1,4 +1,4 @@
-import type { UnitSystem } from '@wwa/shared';
+import type { UnitSystem } from '@breeze/shared';
 
 /**
  * The agent's instructions. The chart section is the "when" and "which" of the chart skill; the

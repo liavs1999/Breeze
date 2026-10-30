@@ -1,5 +1,5 @@
 import { Group, Text } from '@mantine/core';
-import { formatValue, type Quantity, type UnitSystem } from '@wwa/shared';
+import { formatValue, type Quantity, type UnitSystem } from '@breeze/shared';
 
 /**
  * Shared chart chrome, following the dataviz method: recessive hairline grid and axes, 2 px lines,

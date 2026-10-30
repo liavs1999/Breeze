@@ -11,7 +11,7 @@ import {
   type CurrentWeather,
   type Quantity,
   unitSymbol,
-} from '@wwa/shared';
+} from '@breeze/shared';
 import { currentContext } from '../context';
 import { saveDataset } from '../weather/datasets';
 import {
@@ -195,8 +195,6 @@ The chart is shown to the user above your text.`,
     }),
   }),
 };
-
-export type AgentTools = typeof tools;
 
 // ── Summaries the model reads (in the user's units) ───────────────────────────────────────────
 

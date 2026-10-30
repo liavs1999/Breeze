@@ -1,4 +1,4 @@
-import type { ChartKind, ChartSpec, CompareMetric } from '@wwa/shared';
+import type { ChartKind, ChartSpec, CompareMetric } from '@breeze/shared';
 import { getDataset } from '../weather/datasets';
 import { placeLabel, SOURCE, type Dataset } from '../weather/openmeteo';
 

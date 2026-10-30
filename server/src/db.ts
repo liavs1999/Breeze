@@ -2,7 +2,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import type { UIMessage } from 'ai';
-import type { ChatSummary } from '@wwa/shared';
+import type { ChatSummary } from '@breeze/shared';
 import { config } from './config';
 
 /**

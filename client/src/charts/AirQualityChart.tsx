@@ -1,6 +1,6 @@
 import { Bar, CartesianGrid, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Group, Text } from '@mantine/core';
-import { AQI_BANDS, aqiLabel, type ChartOf } from '@wwa/shared';
+import { AQI_BANDS, aqiLabel, type ChartOf } from '@breeze/shared';
 import { axisProps, dayTick, fullTime, hourTick, TooltipCard, yAxisProps } from './common';
 import { Hero } from './parts';
 

@@ -1,5 +1,5 @@
 {
-  "name": "world-weather-agent",
+  "name": "breeze",
   "private": true,
   "type": "module",
   "workspaces": ["shared", "server", "client"],

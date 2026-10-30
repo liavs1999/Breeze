@@ -1,5 +1,5 @@
 import { Text, Tooltip } from '@mantine/core';
-import { convert, describeWeatherCode, type ChartOf, type UnitSystem } from '@wwa/shared';
+import { convert, describeWeatherCode, type ChartOf, type UnitSystem } from '@breeze/shared';
 import { weatherIcon } from '../components/weatherIcons';
 import { dayMonth, deg, localDate, weekdayShort } from './parts';
 import { gradientStops } from './temperatureColors';

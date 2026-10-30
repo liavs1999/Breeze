@@ -3,7 +3,7 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createGroq } from '@ai-sdk/groq';
 import { createOpenAI } from '@ai-sdk/openai';
 import { APICallError, RetryError, wrapLanguageModel, type LanguageModel } from 'ai';
-import { FALLBACK_MODELS, KEY_HEADERS, PROVIDER_INFO, PROVIDERS, type ProviderId } from '@wwa/shared';
+import { FALLBACK_MODELS, KEY_HEADERS, PROVIDER_INFO, PROVIDERS, type ProviderId } from '@breeze/shared';
 import { config } from '../config';
 import { currentContext, sleep } from '../context';
 import { log } from '../log';

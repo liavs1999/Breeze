@@ -4,7 +4,7 @@ import { Hono, type Context } from 'hono';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { UI_MESSAGE_STREAM_HEADERS } from 'ai';
 import { z } from 'zod';
-import { CLIENT_HEADER, clientIdSchema, FAULT_HEADER, FAULTS, keyCheckRequest, type Fault, type Health } from '@wwa/shared';
+import { CLIENT_HEADER, clientIdSchema, FAULT_HEADER, FAULTS, keyCheckRequest, type Fault, type Health } from '@breeze/shared';
 import { config } from './config';
 import { deleteChat, getChat, listChats, saveChat } from './db';
 import { log } from './log';

@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { Area, Bar, CartesianGrid, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { convert, type ChartOf, type UnitSystem } from '@wwa/shared';
+import { convert, type ChartOf, type UnitSystem } from '@breeze/shared';
 import { axisProps, COLORS, cursorProps, dayTick, fullTime, paddedDomain, ticksFor, TooltipCard, yAxisProps } from './common';
 import { deg, Hero } from './parts';
 import { gradientStops, temperatureColor } from './temperatureColors';

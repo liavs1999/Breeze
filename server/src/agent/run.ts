@@ -10,7 +10,7 @@ import {
   validateUIMessages,
   type UIMessage,
 } from 'ai';
-import type { Fault, UnitSystem } from '@wwa/shared';
+import type { Fault, UnitSystem } from '@breeze/shared';
 import { config } from '../config';
 import { runWithContext, type RunContext } from '../context';
 import { saveChat } from '../db';

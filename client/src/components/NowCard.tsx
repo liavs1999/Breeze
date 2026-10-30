@@ -1,6 +1,6 @@
 import { Group, Stack, Text } from '@mantine/core';
 import { IconDroplet, IconTemperature, IconUmbrella, IconWind } from '@tabler/icons-react';
-import { convert, formatValue, type CurrentWeather } from '@wwa/shared';
+import { convert, formatValue, type CurrentWeather } from '@breeze/shared';
 import { useSettings } from '../lib/settings';
 import { skyFor } from '../lib/sky';
 import { weatherIcon } from './weatherIcons';

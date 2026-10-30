@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { Text } from '@mantine/core';
 import { Area, Bar, CartesianGrid, ComposedChart, ReferenceDot, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { convert, describeWeatherCode, type ChartOf, type UnitSystem } from '@wwa/shared';
+import { convert, describeWeatherCode, type ChartOf, type UnitSystem } from '@breeze/shared';
 import { weatherIcon } from '../components/weatherIcons';
 import { axisProps, COLORS, cursorProps, fullTime, paddedDomain, ticksFor, TooltipCard, yAxisProps } from './common';
 import { deg, dominantCode, Hero, hourOf, IconTick, localHour, weekdayShort as weekday } from './parts';

@@ -1,4 +1,4 @@
-import { describeWeatherCode, type CurrentWeather, type Place } from '@wwa/shared';
+import { describeWeatherCode, type CurrentWeather, type Place } from '@breeze/shared';
 import { fetchJson, WeatherApiError } from './http';
 
 const GEOCODING = 'https://geocoding-api.open-meteo.com/v1/search';

@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { Health, KeyCheckResult } from '@wwa/shared';
+import type { Health, KeyCheckResult } from '@breeze/shared';
 import { api, withRetry } from './api';
 import { getSettings } from './settings';
 

@@ -2,7 +2,7 @@ import { ActionIcon, Badge, Group, Menu, SegmentedControl, Text, Tooltip, Unstyl
 import { IconHistory, IconKey, IconMoon, IconPlus, IconSun, IconTrash } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { modelName, PROVIDER_INFO, type ChatSummary } from '@wwa/shared';
+import { modelName, PROVIDER_INFO, type ChatSummary } from '@breeze/shared';
 import { api } from '../lib/api';
 import { isCurrentChatEmpty } from '../lib/currentChat';
 import { maskKey, updateSettings, useSettings } from '../lib/settings';

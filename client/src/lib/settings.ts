@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { CLIENT_HEADER, FAULT_HEADER, KEY_HEADERS, type Fault, type ProviderId, type UnitSystem } from '@wwa/shared';
+import { CLIENT_HEADER, FAULT_HEADER, KEY_HEADERS, type Fault, type ProviderId, type UnitSystem } from '@breeze/shared';
 import { clientId, read, readJson, write } from './storage';
 
 /**

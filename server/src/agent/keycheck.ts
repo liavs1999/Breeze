@@ -1,5 +1,5 @@
 import { APICallError, generateText, LoadAPIKeyError, RetryError } from 'ai';
-import { PROVIDER_INFO, type KeyCheckRequest, type KeyCheckResult } from '@wwa/shared';
+import { PROVIDER_INFO, type KeyCheckRequest, type KeyCheckResult } from '@breeze/shared';
 import { baseModel } from './models';
 
 /** One tiny request to the provider, reported in plain words. The key is not stored or logged. */

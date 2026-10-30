@@ -1,4 +1,3 @@
-import { useSyncExternalStore } from 'react';
 import type { ChatMessage } from './types';
 
 /**
@@ -38,21 +37,13 @@ export function skyFor(code: number | null | undefined, isDay: boolean): Sky {
 const defaultSky = () => skyFor(1, document.documentElement.getAttribute('data-mantine-color-scheme') !== 'dark');
 
 let current: Sky = defaultSky();
-const listeners = new Set<() => void>();
 
 function setSky(sky: Sky) {
   if (sky.top === current.top && sky.bottom === current.bottom) return;
   current = sky;
   document.documentElement.style.setProperty('--sky-top', sky.top);
   document.documentElement.style.setProperty('--sky-bottom', sky.bottom);
-  listeners.forEach((l) => l());
 }
-
-export const useSky = () =>
-  useSyncExternalStore(
-    (l) => (listeners.add(l), () => listeners.delete(l)),
-    () => current,
-  );
 
 /** Follows the most recent weather in the conversation: current conditions, else the latest chart. */
 export function skyFromMessages(messages: ChatMessage[]): void {

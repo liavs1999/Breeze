@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PROVIDER_INFO, PROVIDERS, type ProviderId } from '@wwa/shared';
+import { PROVIDER_INFO, PROVIDERS, type ProviderId } from '@breeze/shared';
 
 const here = dirname(fileURLToPath(import.meta.url));
 export const SERVER_ROOT = resolve(here, '..');

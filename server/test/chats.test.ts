@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CLIENT_HEADER } from '@wwa/shared';
+import { CLIENT_HEADER } from '@breeze/shared';
 import { app } from '../src/app';
 import { getChat, saveChat } from '../src/db';
 

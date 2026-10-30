@@ -1,5 +1,5 @@
 import type { UIDataTypes, UIMessage } from 'ai';
-import type { ChartSpec, CurrentWeather } from '@wwa/shared';
+import type { ChartSpec, CurrentWeather } from '@breeze/shared';
 
 /** Mirrors the server's AnswerMetadata. */
 export interface AnswerMetadata {

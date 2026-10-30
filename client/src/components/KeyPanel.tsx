@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Anchor, Badge, Button, Checkbox, Group, Loader, Modal, Radio, Select, Stack, Text, TextInput, VisuallyHidden } from '@mantine/core';
 import { IconAlertTriangle, IconCheck, IconKey, IconRefresh } from '@tabler/icons-react';
-import { PROVIDER_INFO, PROVIDERS, type KeyCheckResult, type ProviderId } from '@wwa/shared';
+import { PROVIDER_INFO, PROVIDERS, type KeyCheckResult, type ProviderId } from '@breeze/shared';
 import { api, ApiError } from '../lib/api';
 import { clearKey, maskKey, saveKey, updateSettings, useSettings } from '../lib/settings';
 import { setKeyResult, useAppStatus } from '../lib/status';

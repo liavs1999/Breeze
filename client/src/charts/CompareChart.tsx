@@ -1,6 +1,6 @@
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { SimpleGrid, Text } from '@mantine/core';
-import { convert, formatValue, type ChartOf, type CompareMetric, type Quantity, type UnitSystem } from '@wwa/shared';
+import { convert, formatValue, type ChartOf, type CompareMetric, type Quantity, type UnitSystem } from '@breeze/shared';
 import { activeDot, axisProps, cursorProps, dayTick, fullTime, hourTick, paddedDomain, PLACE_COLORS, ticksFor, TooltipCard, yAxisProps } from './common';
 
 const QUANTITY: Record<CompareMetric, Quantity> = {
