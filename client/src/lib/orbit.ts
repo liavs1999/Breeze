@@ -26,27 +26,14 @@ const listeners = new Set<() => void>();
 
 const root = document.documentElement;
 
-/**
- * Time for the flight, normally the clock. Frame-by-frame captures slow it down (window.__orbitSlowmo,
- * a factor below 1) so a slow software renderer still gets every step on film.
- */
-export const slowmo = () => Math.min(1, Math.max(0.02, (window as unknown as { __orbitSlowmo?: number }).__orbitSlowmo ?? 1));
-let virtual = 0;
-let lastReal = performance.now();
-export function orbitNow(): number {
-  const real = performance.now();
-  virtual += (real - lastReal) * slowmo();
-  lastReal = real;
-  return virtual;
-}
-export const later = (fn: () => void, ms: number) => setTimeout(fn, ms / slowmo());
+/** Time for the flight. */
+export const orbitNow = (): number => performance.now();
+export const later = (fn: () => void, ms: number) => setTimeout(fn, ms);
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 function set(next: Partial<State>) {
   state = { ...state, ...next };
   root.dataset.stage = state.stage;
-// Frame-by-frame captures drive the flight directly (a comparison, a fly-out) when they ask for it.
-if ((window as unknown as { __orbitDebug?: boolean }).__orbitDebug) (window as unknown as { __orbit: typeof orbit }).__orbit = orbit;
   listeners.forEach((l) => l());
 }
 
@@ -131,5 +118,3 @@ export function useStage(): Stage {
 }
 
 root.dataset.stage = state.stage;
-// Frame-by-frame captures drive the flight directly (a comparison, a fly-out) when they ask for it.
-if ((window as unknown as { __orbitDebug?: boolean }).__orbitDebug) (window as unknown as { __orbit: typeof orbit }).__orbit = orbit;
