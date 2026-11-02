@@ -3,6 +3,7 @@ import { convert, describeWeatherCode, type ChartOf, type UnitSystem } from '@br
 import { weatherIcon } from '../components/weatherIcons';
 import { dayMonth, deg, localDate, weekdayShort } from './parts';
 import { gradientStops } from './temperatureColors';
+import { Count } from './Count';
 
 /**
  * Day rows: weekday, condition (with the chance of rain when it matters), low, a bar from low to high
@@ -25,7 +26,7 @@ export function DailyForecast({ spec, units }: { spec: ChartOf<'temperature_rang
 
   return (
     <div data-chart role="img" aria-label={`${spec.title}. ${valid.map((d) => `${weekdayShort(d.date)} ${deg(d.lo!)} to ${deg(d.hi!)}`).join(', ')}.`}>
-      {days.map((d) => {
+      {days.map((d, i) => {
         const DayIcon = weatherIcon(d.code ?? 3, true);
         const label = d.date === today ? 'Today' : weekdayShort(d.date);
         if (d.lo == null || d.hi == null) {
@@ -64,13 +65,13 @@ export function DailyForecast({ spec, units }: { spec: ChartOf<'temperature_rang
               </div>
             </Tooltip>
             <Text className="day-temp" data-dim="true" ta="right">
-              {deg(d.lo)}
+              <Count text={deg(d.lo)} delay={200 + i * 70} duration={900} />
             </Text>
             <div className="range-track" aria-hidden>
-              <div className="range-fill" style={{ left: `${Math.min(left, 97)}%`, width: `${width}%`, background: `linear-gradient(90deg, ${stops})` }} />
+              <div className="range-fill" style={{ left: `${Math.min(left, 97)}%`, width: `${width}%`, background: `linear-gradient(90deg, ${stops})`, ['--i' as string]: i }} />
             </div>
             <Text className="day-temp" ta="right">
-              {deg(d.hi)}
+              <Count text={deg(d.hi)} delay={200 + i * 70} duration={900} />
             </Text>
           </div>
         );

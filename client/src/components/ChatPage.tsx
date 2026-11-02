@@ -12,6 +12,7 @@ import type { ChatMessage } from '../lib/types';
 import { read, write } from '../lib/storage';
 import { setCurrentChatEmpty } from '../lib/currentChat';
 import { setSkyHome, skyFromMessages } from '../lib/sky';
+import { useOrbitDirector } from '../lib/useOrbitDirector';
 import { Composer } from './Composer';
 import { EmptyState } from './EmptyState';
 import { MessageView } from './MessageView';
@@ -91,6 +92,7 @@ function Conversation({ chatId, initial, onOpenKeyPanel }: { chatId: string; ini
   const busy = status === 'submitted' || status === 'streaming';
   const isEmpty = messages.length === 0 && !busy;
   useEffect(() => skyFromMessages(messages), [messages]);
+  useOrbitDirector(messages, busy, isEmpty);
   useEffect(() => {
     setCurrentChatEmpty(isEmpty);
     setSkyHome(isEmpty);

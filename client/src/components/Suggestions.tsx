@@ -8,7 +8,7 @@ export function Suggestions({ message, onPick }: { message: ChatMessage | undefi
   const found = suggestionsFor(message);
   if (!found) return null;
   return (
-    <Group gap={8} className="fade-in" aria-label={found.kind === 'places' ? 'Choose a place' : 'Suggested questions'} role="group">
+    <Group gap={8} className="fade-in suggestions" aria-label={found.kind === 'places' ? 'Choose a place' : 'Suggested questions'} role="group">
       {found.items.map((s) => (
         <UnstyledButton key={s.prompt} className="card suggestion" onClick={() => onPick(s.prompt)} title={s.prompt}>
           {found.kind === 'places' && <IconMapPin size={14} stroke={1.8} aria-hidden />}

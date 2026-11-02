@@ -619,24 +619,53 @@ body {
   font-weight: 280;
   line-height: 1.02;
   letter-spacing: -0.045em;
-  color: var(--on-sky);
+  color: var(--hero-ink, var(--on-sky));
   text-align: center;
   margin: 0;
-  text-shadow: 0 2px 30px color-mix(in srgb, var(--sky-zenith) 45%, transparent);
+  text-shadow: 0 2px 30px var(--hero-shadow, color-mix(in srgb, var(--sky-zenith) 45%, transparent));
 }
 .hero-sub {
   font-size: 17px;
   line-height: 1.5;
   max-width: 440px;
   text-align: center;
-  color: color-mix(in srgb, var(--on-sky) 82%, transparent);
-  text-shadow: 0 1px 16px color-mix(in srgb, var(--sky-zenith) 50%, transparent);
+  color: color-mix(in srgb, var(--hero-ink, var(--on-sky)) 82%, transparent);
+  text-shadow: 0 1px 16px var(--hero-shadow, color-mix(in srgb, var(--sky-zenith) 50%, transparent));
 }
 .hero-sun-slot {
   width: 76px;
   height: 76px;
 }
+
+/* The welcome fills the screen between header and composer: title at the top, examples at the bottom,
+   and between them the planet (or the open sky). */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 28px;
+  min-height: calc(100dvh - 210px);
+  padding-top: clamp(40px, 11vh, 120px);
+  padding-bottom: 8px;
+  box-sizing: border-box;
+}
+.example-text,
+.example-hint {
+  display: block;
+}
+.examples {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
 .example {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 14px 9px 9px;
+  border-radius: 20px !important;
+  text-align: left;
+  animation: fade-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   transition:
     transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
     background-color 220ms ease,
@@ -649,13 +678,33 @@ body {
 .example-icon {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 11px;
   flex-shrink: 0;
   color: #fff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 12px -4px var(--tone);
   background: linear-gradient(160deg, color-mix(in srgb, var(--tone) 75%, white), var(--tone));
+}
+@media (max-width: 600px) {
+  /* One swipeable row on a phone, so the planet stays in view. */
+  .examples {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 78%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    margin: 0 -16px;
+    padding: 4px 16px 8px;
+    scroll-padding: 0 16px;
+  }
+  .examples::-webkit-scrollbar {
+    display: none;
+  }
+  .example {
+    scroll-snap-align: start;
+  }
 }
 
 /* ══ Messages ══════════════════════════════════════════════════════════════════════════════════ */
@@ -763,7 +812,8 @@ body {
   mask-image: linear-gradient(to top, #000 45%, transparent);
 }
 .footnote {
-  color: color-mix(in srgb, var(--on-horizon) 72%, transparent);
+  color: color-mix(in srgb, var(--foot-ink, var(--on-horizon)) 72%, transparent);
+  transition: color 0.8s ease;
 }
 .footnote a {
   color: inherit;
@@ -1157,4 +1207,261 @@ body {
   .sky > * {
     transition-duration: 0s;
   }
+}
+
+/* ══ Orbit: the Earth from space, and the dive into the sky ═══════════════════════════════════════ */
+
+.orbit {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.orbit-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.orbit-labels {
+  position: absolute;
+  inset: 0;
+}
+/* While the planet is in view, text on the page is light on the dark of space. */
+:root[data-orbit='on'][data-stage='orbit'],
+:root[data-orbit='on'][data-stage='search'],
+:root[data-orbit='on'][data-stage='approach'],
+:root[data-orbit='on'][data-stage='dive'] {
+  --hero-ink: #ffffff;
+  --hero-shadow: rgba(0, 0, 0, 0.7);
+  --foot-ink: #ffffff;
+}
+:root[data-orbit='on'] .hero-sun-slot {
+  display: none;
+}
+:root[data-orbit='on'] .welcome {
+  padding-top: clamp(14px, 4vh, 44px);
+}
+/* In orbit the examples are one row of compact pills along the bottom, so the planet has the stage. */
+:root[data-orbit='on'] .example-hint {
+  display: none;
+}
+:root[data-orbit='on'] .examples {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin: 0 -16px;
+  padding: 4px 16px 8px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+}
+:root[data-orbit='on'] .examples::-webkit-scrollbar {
+  display: none;
+}
+:root[data-orbit='on'] .example {
+  padding: 6px 14px 6px 6px;
+  border-radius: 99px !important;
+  white-space: nowrap;
+}
+:root[data-orbit='on'] .example .example-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 99px;
+}
+/* Space is black: the backdrop sky waits underneath until the dive. */
+:root[data-orbit='on'][data-stage='orbit'] .sky,
+:root[data-orbit='on'][data-stage='search'] .sky {
+  opacity: 0;
+}
+.sky {
+  transition: opacity 1.2s ease;
+}
+:root[data-orbit='on'][data-stage='orbit'] {
+  background: #02040a;
+}
+/* In orbit the backdrop's own sun stays out of the way (the globe has the real one). */
+:root[data-orbit='on'][data-stage='orbit'] .sky-body {
+  opacity: 0;
+}
+
+/* A city's temperature on the globe: a dot in its temperature color, the name where there is room. */
+.globe-city,
+.globe-place {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  will-change: transform, opacity;
+  white-space: nowrap;
+  font-family: var(--font-display);
+}
+.globe-city i {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--dot);
+  box-shadow:
+    0 0 6px 1px var(--dot),
+    0 0 16px 3px color-mix(in srgb, var(--dot) 45%, transparent);
+  flex-shrink: 0;
+}
+.globe-city span {
+  margin-top: -3px;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.9),
+    0 0 12px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.globe-city.named span {
+  opacity: 1;
+}
+.globe-city b {
+  font-weight: 650;
+  color: color-mix(in srgb, var(--dot) 70%, white);
+}
+/* The place of the question: a bright point, one expanding ring as it is found, and its name. */
+.globe-place i {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 10px 3px rgba(190, 225, 255, 0.9),
+    0 0 30px 8px rgba(120, 180, 255, 0.45);
+  flex-shrink: 0;
+}
+.globe-place i::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(200, 230, 255, 0.9);
+  animation: found 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) 2;
+  opacity: 0;
+}
+@keyframes found {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(5);
+    opacity: 0;
+  }
+}
+.globe-place span {
+  margin-top: -5px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(10, 16, 32, 0.45);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+/* The clouds the camera dives through, tinted by the sky it is about to enter. */
+.orbit-veil {
+  position: fixed;
+  inset: -10%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(38% 30% at 28% 38%, rgba(255, 255, 255, 0.95), transparent 70%),
+    radial-gradient(42% 34% at 72% 58%, rgba(255, 255, 255, 0.9), transparent 70%),
+    radial-gradient(30% 26% at 55% 22%, rgba(255, 255, 255, 0.85), transparent 70%),
+    radial-gradient(36% 30% at 40% 78%, rgba(255, 255, 255, 0.85), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--sky-mid) 35%, white), color-mix(in srgb, var(--sky-horizon) 30%, white));
+  filter: blur(8px);
+  will-change: opacity, transform;
+}
+
+/* While the camera travels, the answer waits; it rises onto the sky when the dive lands. */
+:root[data-orbit='on'][data-stage='search'] .turn,
+:root[data-orbit='on'][data-stage='approach'] .turn,
+:root[data-orbit='on'][data-stage='dive'] .turn,
+:root[data-orbit='on'][data-stage='search'] .suggestions,
+:root[data-orbit='on'][data-stage='approach'] .suggestions,
+:root[data-orbit='on'][data-stage='dive'] .suggestions {
+  opacity: 0;
+  animation: none;
+}
+.turn {
+  animation: rise 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(70px) scale(0.97);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* Cards that arrive come alive: lines draw themselves left to right, day bars grow from their low. */
+.alive .recharts-surface {
+  animation: draw 1.7s cubic-bezier(0.65, 0, 0.25, 1) 0.25s both;
+}
+@keyframes draw {
+  from {
+    clip-path: inset(-30% 100% -30% -10%);
+  }
+  to {
+    clip-path: inset(-30% -10% -30% -10%);
+  }
+}
+.alive .range-fill {
+  transform-origin: left center;
+  animation: grow 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms + 200ms);
+}
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+}
+:root[data-orbit='on'][data-stage='search'] .alive *,
+:root[data-orbit='on'][data-stage='approach'] .alive *,
+:root[data-orbit='on'][data-stage='dive'] .alive * {
+  animation-play-state: paused !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turn,
+  .example,
+  .alive .recharts-surface,
+  .alive .range-fill,
+  .globe-place i::after {
+    animation: none !important;
+  }
+}
+
+/* At night the clouds are dark: the dive passes through a dim blue mist, not a white flash. */
+:root[data-daylight='night'] .orbit-veil {
+  background:
+    radial-gradient(38% 30% at 28% 38%, rgba(150, 165, 195, 0.55), transparent 70%),
+    radial-gradient(42% 34% at 72% 58%, rgba(140, 155, 185, 0.5), transparent 70%),
+    radial-gradient(30% 26% at 55% 22%, rgba(150, 165, 195, 0.45), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--sky-mid) 70%, #8a97b0), color-mix(in srgb, var(--sky-horizon) 70%, #8a97b0));
 }

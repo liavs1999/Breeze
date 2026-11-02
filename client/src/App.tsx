@@ -5,6 +5,7 @@ import { Header } from './components/Header';
 import { KeyPanel } from './components/KeyPanel';
 import { ChatPage } from './components/ChatPage';
 import { SkyBackdrop } from './components/SkyBackdrop';
+import { Orbit } from './components/Orbit';
 import { checkSavedKey, loadHealth } from './lib/status';
 
 export function App() {
@@ -20,6 +21,7 @@ export function App() {
   return (
     <div className="app">
       <SkyBackdrop />
+      <Orbit />
       <Header onOpenKeyPanel={() => setKeyPanelOpen(true)} />
       <Routes>
         <Route path="/" element={<NewChat />} />

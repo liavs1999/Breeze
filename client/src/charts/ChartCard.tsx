@@ -4,6 +4,7 @@ import { IconArrowsShuffle, IconCalendar, IconChartLine, IconClock, IconDroplet,
 import type { ChartSpec } from '@breeze/shared';
 import { useSettings } from '../lib/settings';
 import { renderChart } from './kinds';
+import { Arriving, useArriving } from './Count';
 
 /** The small uppercase label at the top of a card, with its icon. */
 function sectionOf(spec: ChartSpec): { label: string; icon: Icon } {
@@ -33,9 +34,11 @@ export function ChartCard({ spec }: { spec: ChartSpec }) {
   const [view, setView] = useState<'chart' | 'table'>('chart');
   const section = sectionOf(spec);
   const SectionIcon = section.icon;
+  const arriving = useArriving();
 
   return (
-    <Box className="chart-card">
+    <Arriving.Provider value={arriving}>
+    <Box className={arriving ? 'chart-card alive' : 'chart-card'}>
       <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs" mb={10}>
         <div style={{ minWidth: 0 }}>
           <div className="card-label">
@@ -85,5 +88,6 @@ export function ChartCard({ spec }: { spec: ChartSpec }) {
         {spec.source}
       </Text>
     </Box>
+    </Arriving.Provider>
   );
 }

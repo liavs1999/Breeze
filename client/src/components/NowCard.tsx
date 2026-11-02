@@ -4,6 +4,7 @@ import { convert, formatValue, type CurrentWeather } from '@breeze/shared';
 import { useSettings } from '../lib/settings';
 import { skyFor, type Sky } from '../lib/sky';
 import { weatherIcon } from './weatherIcons';
+import { Arriving, Count, useArriving } from '../charts/Count';
 
 /**
  * Current conditions as a sky card: the place, one large light-weight temperature, the condition and
@@ -17,10 +18,12 @@ export function NowCard({ data }: { data: CurrentWeather & { stale?: boolean } }
   const local = new Date(`${data.observedAt}:00Z`).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
   const Icon = weatherIcon(data.weatherCode, data.isDay);
   const hours = data.next24h.slice(0, 12);
+  const arriving = useArriving();
 
   return (
+    <Arriving.Provider value={arriving}>
     <div
-      className="now-card"
+      className={arriving ? 'now-card alive' : 'now-card'}
       style={{
         background: `linear-gradient(180deg, ${sky.zenith} 0%, ${sky.mid} 55%, ${sky.horizon} 100%)`,
         ['--now-glow' as string]: glowFor(sky),
@@ -34,7 +37,7 @@ export function NowCard({ data }: { data: CurrentWeather & { stale?: boolean } }
           {[data.place.country, `${local} local time`].filter(Boolean).join(' · ')}
         </Text>
         <div className="now-temp" style={{ marginTop: 4 }}>
-          {t(data.temperature)}
+          <Count text={t(data.temperature)} duration={1400} />
         </div>
         <Group gap={6}>
           <Icon size={20} stroke={1.8} aria-hidden />
@@ -71,6 +74,7 @@ export function NowCard({ data }: { data: CurrentWeather & { stale?: boolean } }
         </div>
       </div>
     </div>
+    </Arriving.Provider>
   );
 }
 
