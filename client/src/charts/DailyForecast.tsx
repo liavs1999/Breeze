@@ -59,17 +59,17 @@ export function DailyForecast({ spec, units }: { spec: ChartOf<'temperature_rang
             </div>
             <Tooltip label={describeWeatherCode(d.code)} openDelay={200}>
               <div className="day-icon">
-                <DayIcon size={22} stroke={1.5} aria-hidden />
+                <DayIcon size={22} stroke={1.4} aria-hidden />
                 {(d.rainChance ?? 0) >= 20 && <span className="rain-chance">{d.rainChance}%</span>}
               </div>
             </Tooltip>
-            <Text c="dimmed" ta="right" fw={500}>
+            <Text className="day-temp" data-dim="true" ta="right">
               {deg(d.lo)}
             </Text>
             <div className="range-track" aria-hidden>
               <div className="range-fill" style={{ left: `${Math.min(left, 97)}%`, width: `${width}%`, background: `linear-gradient(90deg, ${stops})` }} />
             </div>
-            <Text ta="right" fw={600}>
+            <Text className="day-temp" ta="right">
               {deg(d.hi)}
             </Text>
           </div>

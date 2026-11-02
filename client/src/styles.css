@@ -1,15 +1,37 @@
-/* Design tokens, materials and the few custom components. Chart series colors are the validated
-   reference palette from the dataviz guide; text always uses the ink tokens, never series colors. */
+/* Living sky: the weather of the place being discussed fills the page, and everything else is glass
+   on top of it. Tokens first (glass, ink, chart), then the sky itself, then the components. Chart
+   series colors are the validated reference palette from the dataviz guide; text always uses the
+   ink tokens, never series colors. */
 
+@property --sky-zenith {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #1666d0;
+}
+@property --sky-mid {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #3d8de4;
+}
+@property --sky-horizon {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #8fc6f3;
+}
+@property --sky-glow {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #fff0c2;
+}
 @property --sky-top {
   syntax: '<color>';
   inherits: true;
-  initial-value: #2f7fd8;
+  initial-value: #1666d0;
 }
 @property --sky-bottom {
   syntax: '<color>';
   inherits: true;
-  initial-value: #7db8ee;
+  initial-value: #8fc6f3;
 }
 @property --glow-angle {
   syntax: '<angle>';
@@ -19,86 +41,120 @@
 
 :root {
   --app-max: 760px;
-  --radius-card: 22px;
-  transition: --sky-top 1.6s ease, --sky-bottom 1.6s ease;
+  --radius-card: 24px;
+  --font-display: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ease-sky: cubic-bezier(0.45, 0, 0.2, 1);
+  --on-sky: #ffffff;
+  --on-horizon: #0b1424;
+  transition:
+    --sky-zenith 2.2s var(--ease-sky),
+    --sky-mid 2.2s var(--ease-sky),
+    --sky-horizon 2.2s var(--ease-sky),
+    --sky-glow 2.2s var(--ease-sky),
+    --sky-top 2.2s var(--ease-sky),
+    --sky-bottom 2.2s var(--ease-sky);
 }
 
 html,
 body,
 #root {
-  height: 100%;
+  min-height: 100%;
+}
+
+html {
+  background: linear-gradient(180deg, var(--sky-zenith), var(--sky-horizon)) fixed;
 }
 
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  background: var(--mantine-color-body);
-  letter-spacing: -0.005em;
+  background: transparent;
+  letter-spacing: -0.008em;
+  font-feature-settings: 'cv11', 'ss01';
+  font-optical-sizing: auto;
 }
 
-/* :root + attribute, so these win over Mantine's own scheme variables. */
+/* :root + attribute, so these win over Mantine's own scheme variables. Mantine's body color stays
+   solid (menus and inputs use it); the page itself is the sky. */
 :root[data-mantine-color-scheme='light'] {
-  --mantine-color-body: #f2f2f7;
-  --surface: rgba(255, 255, 255, 0.78);
+  --mantine-color-body: #f4f7fb;
+  --glass: rgba(255, 255, 255, 0.64);
+  --glass-strong: rgba(255, 255, 255, 0.86);
+  --glass-edge: rgba(255, 255, 255, 0.75);
+  --glass-tint: rgba(255, 255, 255, 0.42);
+  --surface: var(--glass);
   --surface-solid: #ffffff;
-  --surface-muted: rgba(118, 118, 128, 0.12);
-  --hairline: rgba(60, 60, 67, 0.13);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.05);
-  --chart-grid: rgba(60, 60, 67, 0.1);
-  --chart-axis: rgba(60, 60, 67, 0.22);
-  --ink-primary: #000000;
-  --ink-secondary: rgba(60, 60, 67, 0.82);
-  --ink-muted: rgba(60, 60, 67, 0.56);
-  --accent: #007aff;
-  --aura-opacity: 0.32;
+  --surface-muted: rgba(22, 40, 72, 0.075);
+  --inset: rgba(255, 255, 255, 0.5);
+  --hairline: rgba(22, 40, 72, 0.11);
+  --shadow: 0 1px 1px rgba(10, 30, 70, 0.04), 0 18px 48px -12px rgba(10, 30, 70, 0.22);
+  --chart-grid: rgba(22, 40, 72, 0.08);
+  --chart-axis: rgba(22, 40, 72, 0.18);
+  --ink-primary: #0b1424;
+  --ink-secondary: rgba(16, 28, 50, 0.76);
+  --ink-muted: rgba(16, 28, 50, 0.54);
+  --accent: #0a6ff0;
   --series-blue: #2a78d6;
   --series-orange: #eb6834;
   --series-aqua: #1baf7a;
   --series-yellow: #eda100;
   --series-violet: #4a3aa7;
-  --normal-band: rgba(60, 60, 67, 0.12);
+  --normal-band: rgba(22, 40, 72, 0.1);
+  --line-glow: 0.55;
 }
 
 :root[data-mantine-color-scheme='dark'] {
-  --mantine-color-body: #000000;
-  --surface: rgba(28, 28, 30, 0.74);
-  --surface-solid: #1c1c1e;
-  --surface-muted: rgba(118, 118, 128, 0.24);
-  --hairline: rgba(84, 84, 88, 0.5);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.35);
-  --chart-grid: rgba(84, 84, 88, 0.45);
-  --chart-axis: rgba(84, 84, 88, 0.75);
+  --mantine-color-body: #0b1020;
+  --glass: rgba(12, 17, 32, 0.48);
+  --glass-strong: rgba(255, 255, 255, 0.15);
+  --glass-edge: rgba(255, 255, 255, 0.14);
+  --glass-tint: rgba(255, 255, 255, 0.06);
+  --surface: var(--glass);
+  --surface-solid: #1a2134;
+  --surface-muted: rgba(255, 255, 255, 0.08);
+  --inset: rgba(255, 255, 255, 0.045);
+  --hairline: rgba(255, 255, 255, 0.1);
+  --shadow: 0 1px 1px rgba(0, 0, 0, 0.25), 0 20px 50px -12px rgba(0, 0, 0, 0.55);
+  --chart-grid: rgba(255, 255, 255, 0.07);
+  --chart-axis: rgba(255, 255, 255, 0.16);
   --ink-primary: #ffffff;
-  --ink-secondary: rgba(235, 235, 245, 0.78);
-  --ink-muted: rgba(235, 235, 245, 0.55);
-  --accent: #0a84ff;
-  --aura-opacity: 0.55;
-  --series-blue: #3987e5;
-  --series-orange: #d95926;
-  --series-aqua: #199e70;
-  --series-yellow: #c98500;
-  --series-violet: #9085e9;
-  --normal-band: rgba(235, 235, 245, 0.12);
+  --ink-secondary: rgba(232, 238, 255, 0.8);
+  --ink-muted: rgba(232, 238, 255, 0.56);
+  --accent: #4ea3ff;
+  --series-blue: #4f97ef;
+  --series-orange: #f0743f;
+  --series-aqua: #2fc28c;
+  --series-yellow: #e2a51b;
+  --series-violet: #9b90ef;
+  --normal-band: rgba(232, 238, 255, 0.12);
+  --line-glow: 0.8;
+}
+
+/* Light glass on a dark sky (night, rain, storm) is frosted thicker, so it reads as lit, not grey. */
+:root[data-mantine-color-scheme='light'][data-daylight='night'],
+:root[data-mantine-color-scheme='light'][data-sky='rain'],
+:root[data-mantine-color-scheme='light'][data-sky='storm'] {
+  --glass: rgba(255, 255, 255, 0.8);
+  --glass-strong: rgba(255, 255, 255, 0.92);
+  --glass-edge: rgba(255, 255, 255, 0.5);
+  --inset: rgba(244, 247, 252, 0.7);
+}
+
+/* Mantine text that says "dimmed" follows the ink, so it reads on glass in both schemes. */
+:root {
+  --mantine-color-dimmed: var(--ink-muted);
+  --mantine-color-text: var(--ink-primary);
 }
 
 .app {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   isolation: isolate;
-}
-
-/* The sky of the place being discussed, tinting the top of the page. */
-.sky-aura {
-  position: fixed;
-  inset: 0 0 auto 0;
-  height: 75vh;
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 38%, transparent 100%);
-  opacity: var(--aura-opacity);
+  color: var(--ink-primary);
 }
 
 .column {
@@ -109,23 +165,395 @@ body {
   box-sizing: border-box;
 }
 
-/* Frosted material for cards, menus and the composer. */
-.card {
-  background: var(--surface);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
-  border: 0.5px solid var(--hairline);
+/* ══ The sky ═══════════════════════════════════════════════════════════════════════════════════
+   Fixed behind everything. Layers fade in and out by family (data-sky) and time of day
+   (data-daylight); only transforms and opacity animate. */
+
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+.sky > * {
+  position: absolute;
+  transition: opacity 2.2s var(--ease-sky);
+}
+
+.sky-gradient {
+  inset: 0;
+  background:
+    radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--sky-zenith) 70%, black) 0%, transparent 60%),
+    linear-gradient(180deg, var(--sky-zenith) 0%, var(--sky-mid) 42%, var(--sky-horizon) 88%, color-mix(in srgb, var(--sky-horizon) 70%, var(--sky-glow)) 100%);
+}
+:root[data-daylight='day'] .sky-gradient {
+  background:
+    radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--sky-zenith) 85%, black) 0%, transparent 55%),
+    linear-gradient(180deg, var(--sky-zenith) 0%, var(--sky-mid) 42%, var(--sky-horizon) 86%, color-mix(in srgb, var(--sky-horizon) 55%, var(--sky-glow)) 100%);
+}
+
+/* The light along the horizon: warm by day, a faint city-glow at night. */
+.sky-horizon {
+  inset: auto 0 0 0;
+  height: 55vh;
+  background: radial-gradient(140% 90% at 50% 100%, color-mix(in srgb, var(--sky-glow) 55%, transparent) 0%, transparent 70%);
+  opacity: 0.7;
+}
+:root[data-daylight='night'] .sky-horizon {
+  opacity: 0.45;
+}
+
+/* Stars: clear and partly cloudy nights. */
+.sky-stars {
+  inset: 0 0 35% 0;
+  background-repeat: repeat;
+  opacity: 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent);
+  mask-image: linear-gradient(180deg, #000 30%, transparent);
+}
+:root[data-daylight='night'][data-sky='clear'] .sky-stars {
+  opacity: 1;
+}
+:root[data-daylight='night'][data-sky='partly'] .sky-stars {
+  opacity: 0.55;
+}
+:root[data-daylight='night'][data-sky='snow'] .sky-stars,
+:root[data-daylight='night'][data-sky='overcast'] .sky-stars {
+  opacity: 0.08;
+}
+.sky-stars-twinkle {
+  animation: twinkle 5s ease-in-out infinite alternate;
+}
+@keyframes twinkle {
+  from {
+    filter: brightness(0.6);
+  }
+  to {
+    filter: brightness(1.25);
+  }
+}
+
+/* The sun or the moon: in the middle of the welcome, then up in the corner once a chat starts. */
+/* Until the app knows whether the welcome is showing, the sun waits in place without moving. */
+:root:not([data-sky-ready]) .sky-body {
+  transition: none;
+}
+.sky-body {
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  translate: 84vw 12vh;
+  transition:
+    translate 2.4s var(--ease-sky),
+    opacity 2.2s var(--ease-sky);
+}
+/* On the welcome it sits in the slot above the title (header + top padding + half the slot). */
+:root[data-home='true'] .sky-body {
+  translate: 50vw calc(70px + clamp(40px, 11vh, 120px) + 38px);
+}
+.sky-halo,
+.sky-disc {
+  position: absolute;
+  border-radius: 50%;
+  translate: -50% -50%;
+  transition: all 2.2s var(--ease-sky);
+}
+.sky-halo {
+  width: 110vmin;
+  height: 110vmin;
+  background: radial-gradient(circle, color-mix(in srgb, var(--sky-glow) 70%, transparent) 0%, color-mix(in srgb, var(--sky-glow) 22%, transparent) 22%, transparent 60%);
+}
+.sky-disc {
+  width: 76px;
+  height: 76px;
+  background: radial-gradient(circle at 50% 50%, #fffdf4 0%, #fff6d4 45%, #ffe39a 100%);
+  box-shadow:
+    0 0 40px 10px rgba(255, 236, 170, 0.75),
+    0 0 120px 40px rgba(255, 226, 150, 0.35);
+}
+:root[data-daylight='night'] .sky-halo {
+  width: 70vmin;
+  height: 70vmin;
+  background: radial-gradient(circle, rgba(200, 214, 255, 0.22) 0%, rgba(160, 180, 240, 0.08) 25%, transparent 60%);
+}
+:root[data-daylight='night'] .sky-disc {
+  width: 54px;
+  height: 54px;
+  background:
+    radial-gradient(ellipse 26% 20% at 30% 58%, rgba(150, 162, 190, 0.22), transparent 70%),
+    radial-gradient(ellipse 18% 22% at 64% 34%, rgba(150, 162, 190, 0.18), transparent 70%),
+    radial-gradient(ellipse 30% 18% at 58% 72%, rgba(150, 162, 190, 0.14), transparent 70%),
+    radial-gradient(circle at 38% 36%, #ffffff 0%, #eef1fa 50%, #cdd4e8 100%);
+  box-shadow:
+    0 0 30px 6px rgba(210, 222, 255, 0.35),
+    0 0 90px 30px rgba(170, 190, 255, 0.12);
+}
+/* Behind clouds the sun is a diffuse brightness; in rain and storms it is gone. */
+:root[data-sky='overcast'] .sky-disc,
+:root[data-sky='fog'] .sky-disc,
+:root[data-sky='snow'] .sky-disc,
+:root[data-sky='rain'] .sky-body,
+:root[data-sky='storm'] .sky-body {
+  opacity: 0;
+}
+:root[data-sky='overcast'] .sky-halo,
+:root[data-sky='fog'] .sky-halo,
+:root[data-sky='snow'] .sky-halo {
+  opacity: 0.45;
+}
+:root[data-sky='partly'] .sky-disc {
+  opacity: 0.92;
+}
+
+/* Clouds: soft puffs in a strip twice as wide as the page, drifting sideways forever. */
+.sky-clouds {
+  left: 0;
+  width: calc(100% + 1600px);
+  background-repeat: repeat-x;
+  background-size: 1600px 100%;
+  will-change: transform;
+  opacity: 0;
+  --cloud: rgba(255, 255, 255, 0.82);
+  --cloud-soft: rgba(255, 255, 255, 0);
+}
+.sky-clouds-far {
+  top: 2vh;
+  height: 46vh;
+  filter: blur(14px);
+  animation: drift 220s linear infinite;
+  background-image:
+    radial-gradient(ellipse 300px 64px at 140px 30%, var(--cloud), var(--cloud-soft) 70%),
+    radial-gradient(ellipse 200px 46px at 330px 36%, var(--cloud), var(--cloud-soft) 70%),
+    radial-gradient(ellipse 380px 80px at 640px 18%, var(--cloud), var(--cloud-soft) 70%),
+    radial-gradient(ellipse 240px 52px at 860px 26%, var(--cloud), var(--cloud-soft) 70%),
+    radial-gradient(ellipse 340px 70px at 1180px 40%, var(--cloud), var(--cloud-soft) 70%),
+    radial-gradient(ellipse 220px 50px at 1420px 22%, var(--cloud), var(--cloud-soft) 70%),
+    radial-gradient(ellipse 420px 90px at 520px 62%, var(--cloud), var(--cloud-soft) 70%),
+    radial-gradient(ellipse 360px 80px at 1300px 70%, var(--cloud), var(--cloud-soft) 70%);
+}
+.sky-clouds-near {
+  top: 18vh;
+  height: 70vh;
+  filter: blur(22px);
+  animation: drift 130s linear infinite;
+  background-image:
+    radial-gradient(ellipse 520px 150px at 220px 30%, var(--cloud), var(--cloud-soft) 68%),
+    radial-gradient(ellipse 300px 110px at 420px 22%, var(--cloud), var(--cloud-soft) 68%),
+    radial-gradient(ellipse 600px 170px at 900px 46%, var(--cloud), var(--cloud-soft) 68%),
+    radial-gradient(ellipse 340px 120px at 1120px 36%, var(--cloud), var(--cloud-soft) 68%),
+    radial-gradient(ellipse 460px 140px at 1450px 64%, var(--cloud), var(--cloud-soft) 68%),
+    radial-gradient(ellipse 380px 120px at 60px 80%, var(--cloud), var(--cloud-soft) 68%);
+}
+@keyframes drift {
+  to {
+    transform: translateX(-1600px);
+  }
+}
+:root[data-daylight='night'] .sky-clouds {
+  --cloud: rgba(150, 168, 205, 0.32);
+  --cloud-soft: rgba(150, 168, 205, 0);
+}
+:root[data-sky='clear'] .sky-clouds-far {
+  opacity: 0.28;
+}
+:root[data-sky='partly'] .sky-clouds-far {
+  opacity: 0.8;
+}
+:root[data-sky='partly'] .sky-clouds-near {
+  opacity: 0.55;
+}
+:root[data-sky='overcast'] .sky-clouds,
+:root[data-sky='rain'] .sky-clouds,
+:root[data-sky='storm'] .sky-clouds {
+  opacity: 0.9;
+  --cloud: rgba(232, 236, 242, 0.55);
+  --cloud-soft: rgba(232, 236, 242, 0);
+}
+:root[data-sky='rain'] .sky-clouds,
+:root[data-sky='storm'] .sky-clouds {
+  --cloud: rgba(70, 82, 98, 0.7);
+  --cloud-soft: rgba(70, 82, 98, 0);
+}
+:root[data-daylight='night'][data-sky='overcast'] .sky-clouds,
+:root[data-daylight='night'][data-sky='rain'] .sky-clouds,
+:root[data-daylight='night'][data-sky='storm'] .sky-clouds {
+  --cloud: rgba(80, 92, 112, 0.45);
+  --cloud-soft: rgba(80, 92, 112, 0);
+}
+:root[data-sky='snow'] .sky-clouds {
+  opacity: 0.75;
+  --cloud: rgba(244, 248, 252, 0.7);
+  --cloud-soft: rgba(244, 248, 252, 0);
+}
+:root[data-daylight='night'][data-sky='snow'] .sky-clouds {
+  --cloud: rgba(170, 185, 215, 0.3);
+  --cloud-soft: rgba(170, 185, 215, 0);
+}
+:root[data-sky='fog'] .sky-clouds-far {
+  opacity: 0.5;
+}
+
+/* Fog: low milky banks along the horizon. */
+.sky-fog {
+  left: 0;
+  bottom: 0;
+  width: calc(100% + 1600px);
+  height: 75vh;
+  opacity: 0;
+  filter: blur(30px);
+  will-change: transform;
+  animation: drift 260s linear infinite;
+  background-repeat: repeat-x;
+  background-size: 1600px 100%;
+  background-image:
+    radial-gradient(ellipse 900px 200px at 300px 80%, var(--fog), transparent 70%),
+    radial-gradient(ellipse 800px 240px at 1100px 60%, var(--fog), transparent 70%),
+    radial-gradient(ellipse 700px 180px at 800px 95%, var(--fog), transparent 70%),
+    linear-gradient(180deg, transparent 20%, var(--fog) 100%);
+  --fog: rgba(236, 240, 244, 0.7);
+}
+:root[data-daylight='night'] .sky-fog {
+  --fog: rgba(120, 130, 145, 0.35);
+}
+:root[data-sky='fog'] .sky-fog {
+  opacity: 1;
+}
+
+/* Rain: two sheets of streaks, slanted, the near one faster. */
+.sky-rain {
+  left: -15%;
+  top: -320px;
+  width: 130%;
+  height: calc(100% + 640px);
+  rotate: 12deg;
+  background-repeat: repeat;
+  opacity: 0;
+  will-change: transform;
+  animation: fall-rain 0.7s linear infinite;
+}
+.sky-rain-near {
+  animation-duration: 0.42s;
+}
+@keyframes fall-rain {
+  to {
+    transform: translateY(320px);
+  }
+}
+:root[data-sky='rain'] .sky-rain,
+:root[data-sky='storm'] .sky-rain {
+  opacity: 0.7;
+}
+:root[data-daylight='night'][data-sky='rain'] .sky-rain,
+:root[data-daylight='night'][data-sky='storm'] .sky-rain {
+  opacity: 0.45;
+}
+
+/* Snow: two layers of flakes drifting down and a little sideways. */
+.sky-snow {
+  left: -10%;
+  top: -360px;
+  width: 120%;
+  height: calc(100% + 720px);
+  background-repeat: repeat;
+  opacity: 0;
+  will-change: transform;
+  animation: fall-snow 16s linear infinite;
+}
+.sky-snow-near {
+  animation-duration: 9s;
+}
+@keyframes fall-snow {
+  to {
+    transform: translate(40px, 360px);
+  }
+}
+:root[data-sky='snow'] .sky-snow {
+  opacity: 1;
+}
+
+/* Lightning: a rare double flash in a storm. */
+.sky-flash {
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(120% 80% at 70% 10%, rgba(220, 230, 255, 0.55), transparent 60%);
+}
+:root[data-sky='storm'] .sky-flash {
+  animation: flash 11s linear infinite;
+}
+@keyframes flash {
+  0%,
+  88%,
+  89.6%,
+  91%,
+  92.8%,
+  100% {
+    opacity: 0;
+  }
+  89% {
+    opacity: 0.9;
+  }
+  92% {
+    opacity: 0.6;
+  }
+}
+
+/* ══ Glass ═════════════════════════════════════════════════════════════════════════════════════ */
+
+.card,
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+  backdrop-filter: blur(28px) saturate(170%);
+  border: 1px solid var(--glass-edge);
   border-radius: var(--radius-card);
+  box-shadow:
+    inset 0 1px 0 var(--glass-tint),
+    var(--shadow);
+}
+:root[data-mantine-color-scheme='dark'] .card,
+:root[data-mantine-color-scheme='dark'] .glass {
+  border-color: transparent;
+  box-shadow:
+    inset 0 0 0 1px var(--glass-edge),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    var(--shadow);
+}
+
+/* Menus and the key panel are glass too. */
+.mantine-Menu-dropdown,
+.mantine-Tooltip-tooltip,
+.mantine-Modal-content {
+  -webkit-backdrop-filter: blur(30px) saturate(170%);
+  backdrop-filter: blur(30px) saturate(170%);
+}
+.mantine-Menu-dropdown {
+  background: color-mix(in srgb, var(--mantine-color-body) 78%, transparent);
+  border: 1px solid var(--glass-edge);
   box-shadow: var(--shadow);
+}
+.mantine-Modal-content {
+  background: color-mix(in srgb, var(--mantine-color-body) 84%, transparent);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--shadow);
+}
+.mantine-Modal-header {
+  background: transparent;
+}
+.mantine-Tooltip-tooltip {
+  background: color-mix(in srgb, #0b1424 82%, transparent);
+  color: #fff;
 }
 
 .card-label {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-muted);
 }
@@ -134,36 +562,141 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 10px;
+  padding: 5px 11px;
   border-radius: 99px;
   font-size: 12px;
   font-weight: 500;
   color: var(--ink-secondary);
   background: var(--surface-muted);
   flex-shrink: 0;
+  transition: background-color 160ms ease, color 160ms ease;
 }
 .pill-button:hover {
   color: var(--ink-primary);
+  background: color-mix(in srgb, var(--surface-muted) 100%, var(--hairline));
 }
 
-/* ── Messages ─────────────────────────────────────────────────────────────────────────────── */
+/* ══ Header: a floating glass capsule ══════════════════════════════════════════════════════════ */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding-top: 10px;
+  padding-bottom: 14px;
+  margin-bottom: -14px;
+}
+/* Content scrolling up softens into the sky before it reaches the capsule. */
+.topbar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
+}
+.topbar-capsule {
+  height: 52px;
+  padding: 0 8px 0 12px;
+  border-radius: 26px;
+}
+.brand {
+  font-family: var(--font-display);
+  font-weight: 650;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  color: var(--ink-primary);
+}
+
+/* ══ Welcome ═══════════════════════════════════════════════════════════════════════════════════ */
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(44px, 9vw, 68px);
+  font-weight: 280;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  color: var(--on-sky);
+  text-align: center;
+  margin: 0;
+  text-shadow: 0 2px 30px color-mix(in srgb, var(--sky-zenith) 45%, transparent);
+}
+.hero-sub {
+  font-size: 17px;
+  line-height: 1.5;
+  max-width: 440px;
+  text-align: center;
+  color: color-mix(in srgb, var(--on-sky) 82%, transparent);
+  text-shadow: 0 1px 16px color-mix(in srgb, var(--sky-zenith) 50%, transparent);
+}
+.hero-sun-slot {
+  width: 76px;
+  height: 76px;
+}
+.example {
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 220ms ease,
+    box-shadow 220ms ease;
+}
+.example:hover {
+  transform: translateY(-2px);
+  background: var(--glass-strong);
+}
+.example-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 12px -4px var(--tone);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--tone) 75%, white), var(--tone));
+}
+
+/* ══ Messages ══════════════════════════════════════════════════════════════════════════════════ */
 
 .bubble-user {
-  background: var(--accent);
-  color: #fff;
-  border-radius: 20px 20px 6px 20px;
-  padding: 9px 15px;
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(170%);
+  color: var(--ink-primary);
+  border-radius: 22px 22px 6px 22px;
+  padding: 10px 16px;
   line-height: 1.45;
   white-space: pre-wrap;
   font-size: 16px;
+  font-weight: 500;
+  box-shadow:
+    inset 0 0 0 1px var(--glass-edge),
+    var(--shadow);
+}
+
+/* One glass sheet per answer: the steps, the card or chart, the text and the footer together. */
+.turn {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 18px 14px;
+}
+@media (max-width: 480px) {
+  .turn {
+    padding: 14px 14px 12px;
+    border-radius: 22px;
+  }
 }
 
 .answer {
   font-size: 16px;
+  color: var(--ink-primary);
 }
 .answer p {
   margin: 0 0 0.6em;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 .answer p:last-child {
   margin-bottom: 0;
@@ -172,7 +705,7 @@ body {
 .answer ol {
   margin: 0.2em 0 0.6em;
   padding-left: 1.2em;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 .answer li + li {
   margin-top: 0.2em;
@@ -182,6 +715,13 @@ body {
 }
 .answer a {
   color: var(--accent);
+}
+
+.thinking {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 8px 14px;
+  border-radius: 99px;
 }
 
 .shimmer {
@@ -201,18 +741,44 @@ body {
   }
 }
 
-/* ── Composer: while the agent works, a radar beam circles the capsule ───────────────────────
-   One color: the sky of the place being discussed, mixed with the accent, so the
-   beam is deep navy for a night in Reykjavík and bright blue for a morning in Sydney. */
+/* ══ Composer: glass capsule over a soft blur of the page ═══════════════════════════════════════
+   While the agent works, a radar beam circles the capsule. One color: the sky of the place being
+   discussed, lifted toward white, so it reads as light on any sky. */
+
+.composer-dock {
+  position: sticky;
+  bottom: 0;
+  padding-top: 26px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+/* The page softens under the composer instead of being cut by a hard color band. */
+.composer-dock::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  -webkit-mask-image: linear-gradient(to top, #000 45%, transparent);
+  mask-image: linear-gradient(to top, #000 45%, transparent);
+}
+.footnote {
+  color: color-mix(in srgb, var(--on-horizon) 72%, transparent);
+}
+.footnote a {
+  color: inherit;
+}
 
 .composer {
   position: relative;
-  border-radius: 28px;
-  --beam: color-mix(in srgb, var(--sky-top) 55%, var(--accent));
+  border-radius: 30px;
+  --beam: color-mix(in srgb, color-mix(in srgb, var(--sky-glow) 40%, var(--accent)) 70%, white);
 }
-/* On a dark page the beam uses the lighter end of the sky, lifted toward white, so it reads as light. */
-:root[data-mantine-color-scheme='dark'] .composer {
-  --beam: color-mix(in srgb, color-mix(in srgb, var(--sky-bottom) 50%, var(--accent)) 75%, white);
+.composer .card {
+  background: var(--glass-strong);
+}
+:root[data-mantine-color-scheme='dark'] .composer .card {
+  background: color-mix(in srgb, var(--glass) 100%, rgba(255, 255, 255, 0.06));
 }
 /* The beam: a bright head with a fading trail, masked to a thin ring around the capsule. */
 .composer::before {
@@ -231,9 +797,13 @@ body {
     var(--beam) 0.99turn,
     transparent 1turn
   );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
   opacity: 0;
   transition: opacity 0.4s ease;
   animation: beam 2.4s linear infinite;
@@ -257,16 +827,25 @@ body {
   animation: halo 2.4s ease-in-out infinite;
 }
 
+.send-button {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 70%, white), var(--accent)) !important;
+  box-shadow: 0 6px 16px -6px var(--accent);
+}
+.send-button:disabled {
+  background: var(--surface-muted) !important;
+  box-shadow: none;
+}
+
 /* The stop button is a small radar scope: a dark disc, a range ring and the same sweeping beam. */
 .radar-stop {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  background: #1c1c1e !important;
+  background: #0b1424 !important;
   color: #fff !important;
 }
 :root[data-mantine-color-scheme='dark'] .radar-stop {
-  background: #2c2c2e !important;
+  background: #26304a !important;
 }
 .radar-stop::before {
   content: '';
@@ -297,27 +876,52 @@ body {
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--beam) 0%, transparent);
   }
   50% {
-    box-shadow: 0 0 24px 2px color-mix(in srgb, var(--beam) 30%, transparent);
+    box-shadow: 0 0 28px 4px color-mix(in srgb, var(--beam) 45%, transparent);
   }
 }
 
-/* ── Now card ─────────────────────────────────────────────────────────────────────────────── */
+/* ══ Now card: a window onto the place's own sky ═══════════════════════════════════════════════ */
 
 .now-card {
   position: relative;
   overflow: hidden;
-  border-radius: 26px;
+  isolation: isolate;
+  border-radius: 22px;
   color: #fff;
-  padding: 22px 18px 16px;
-  box-shadow: var(--shadow);
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.12);
+  padding: 26px 18px 16px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 14px 36px -14px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.16);
+}
+/* The sun (or moon) glowing in the card's corner. */
+.now-card::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -90px;
+  right: -70px;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--now-glow) 0%, transparent 65%);
+  opacity: 0.8;
+}
+.now-temp {
+  font-family: var(--font-display);
+  font-size: clamp(88px, 22vw, 116px);
+  font-weight: 180;
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+  padding-left: 0.12em;
+  font-variant-numeric: tabular-nums;
 }
 .now-panel {
   background: rgba(255, 255, 255, 0.14);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
-  border: 0.5px solid rgba(255, 255, 255, 0.18);
-  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
   padding: 10px 12px;
 }
 .hour-strip {
@@ -339,20 +943,63 @@ body {
   gap: 6px;
   font-weight: 500;
   font-size: 14px;
+  font-variant-numeric: tabular-nums;
 }
 
-/* ── Day rows (multi-day forecast) ────────────────────────────────────────────────────────── */
+/* ══ Charts ════════════════════════════════════════════════════════════════════════════════════ */
 
+.chart-card {
+  background: var(--inset);
+  border-radius: 18px;
+  padding: 16px 16px 12px;
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+@media (max-width: 480px) {
+  .chart-card {
+    padding: 14px 12px 10px;
+  }
+}
+
+.hero-value {
+  font-family: var(--font-display);
+  font-size: 46px;
+  font-weight: 260;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+}
+.hero-value[data-dim='true'] {
+  color: var(--ink-muted);
+}
+
+/* Day rows (multi-day forecast): luminous bars on a faint track. */
 .day-row {
   display: grid;
-  grid-template-columns: 76px 44px 44px 1fr 44px;
+  grid-template-columns: 70px 40px 40px 1fr 40px;
   align-items: center;
-  gap: 10px;
-  padding: 9px 2px;
-  border-top: 0.5px solid var(--hairline);
+  gap: 12px;
+  padding: 10px 2px;
+  border-top: 1px solid var(--hairline);
+  font-variant-numeric: tabular-nums;
 }
 .day-row:first-child {
   border-top: 0;
+}
+@media (max-width: 480px) {
+  .day-row {
+    grid-template-columns: 52px 34px 34px 1fr 34px;
+    gap: 8px;
+  }
+}
+.day-temp {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+.day-temp[data-dim='true'] {
+  color: var(--ink-muted);
+  font-weight: 350;
 }
 .day-icon {
   display: flex;
@@ -364,20 +1011,40 @@ body {
 .rain-chance {
   font-size: 11px;
   font-weight: 700;
-  color: #5ac8fa;
+  color: #2f9be0;
   line-height: 1;
+}
+:root[data-mantine-color-scheme='dark'] .rain-chance {
+  color: #6cc6ff;
 }
 .range-track {
   position: relative;
-  height: 6px;
-  border-radius: 3px;
+  height: 8px;
+  border-radius: 4px;
   background: var(--surface-muted);
 }
 .range-fill {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-radius: 3px;
+  border-radius: 4px;
+}
+/* The same gradient, blurred underneath: the bar glows in its own colors. */
+.range-fill::after {
+  content: '';
+  position: absolute;
+  inset: -2px 0;
+  border-radius: inherit;
+  background: inherit;
+  filter: blur(7px);
+  opacity: var(--line-glow);
+  z-index: -1;
+}
+.range-fill {
+  isolation: auto;
+}
+.range-track {
+  isolation: isolate;
 }
 
 /* ── Small pieces ─────────────────────────────────────────────────────────────────────────── */
@@ -401,14 +1068,6 @@ body {
   box-sizing: border-box;
 }
 
-.example {
-  transition: transform 160ms ease, background-color 160ms ease;
-}
-.example:hover {
-  transform: translateY(-1px);
-  background: var(--surface-solid);
-}
-
 /* Recharts: tabular axis numbers, no focus outline on the svg */
 .recharts-cartesian-axis-tick text {
   font-variant-numeric: tabular-nums;
@@ -424,29 +1083,24 @@ body {
 .chart-card .recharts-surface {
   overflow: visible;
 }
+.line-glow {
+  opacity: var(--line-glow);
+}
 
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.995);
+    transform: translateY(8px) scale(0.99);
+    filter: blur(4px);
   }
   to {
     opacity: 1;
     transform: none;
+    filter: none;
   }
 }
 .fade-in {
-  animation: fade-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fade-in,
-  .shimmer,
-  .composer::before,
-  .composer::after,
-  .radar-stop::before {
-    animation: none;
-  }
+  animation: fade-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 /* Follow-up questions and place choices under the latest answer */
@@ -454,16 +1108,17 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 14px;
+  padding: 8px 15px;
   border-radius: 999px;
   font-size: 14px;
   font-weight: 500;
   color: var(--ink-primary);
-  box-shadow: none;
-  transition: background-color 160ms ease, transform 160ms ease;
+  transition:
+    background-color 200ms ease,
+    transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .suggestion:hover {
-  background: var(--surface-solid);
+  background: var(--glass-strong);
   transform: translateY(-1px);
 }
 
@@ -472,9 +1127,34 @@ body {
   animation: listening 1.4s ease-in-out infinite;
 }
 @keyframes listening {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--mantine-color-red-6) 35%, transparent); }
-  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--mantine-color-red-6) 0%, transparent); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--mantine-color-red-6) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--mantine-color-red-6) 0%, transparent);
+  }
 }
+
 @media (prefers-reduced-motion: reduce) {
-  .listening { animation: none; }
+  .fade-in,
+  .shimmer,
+  .composer::before,
+  .composer::after,
+  .radar-stop::before,
+  .listening,
+  .sky-clouds,
+  .sky-fog,
+  .sky-rain,
+  .sky-snow,
+  .sky-stars-twinkle,
+  .sky-flash {
+    animation: none !important;
+  }
+  .sky-body,
+  .sky-halo,
+  .sky-disc,
+  .sky > * {
+    transition-duration: 0s;
+  }
 }

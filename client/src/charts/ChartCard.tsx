@@ -35,7 +35,7 @@ export function ChartCard({ spec }: { spec: ChartSpec }) {
   const SectionIcon = section.icon;
 
   return (
-    <Box className="card chart-card" p={18} pb={12}>
+    <Box className="chart-card">
       <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs" mb={10}>
         <div style={{ minWidth: 0 }}>
           <div className="card-label">

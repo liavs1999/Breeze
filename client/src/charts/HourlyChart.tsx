@@ -95,11 +95,15 @@ export function HourlyChart({ spec, units }: { spec: ChartOf<'hourly'>; units: U
               </linearGradient>
               <linearGradient id={`${id}-fill`} x1="0" y1="0" x2="0" y2="1">
                 {fillStops.map((s) => (
-                  <stop key={s.offset} offset={s.offset} stopColor={s.color} stopOpacity={0.42 - 0.36 * s.offset} />
+                  <stop key={s.offset} offset={s.offset} stopColor={s.color} stopOpacity={0.5 - 0.46 * s.offset} />
                 ))}
               </linearGradient>
+              {/* The glow: the same line, wide and blurred, under the real one. */}
+              <filter id={`${id}-glow`} x="-10%" y="-40%" width="120%" height="180%">
+                <feGaussianBlur stdDeviation="6" />
+              </filter>
             </defs>
-            <CartesianGrid stroke="var(--chart-grid)" vertical horizontal />
+            <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="2 5" vertical={false} horizontal />
             <XAxis xAxisId="icons" orientation="top" dataKey="t" ticks={iconTicks} interval={0} height={30} axisLine={false} tickLine={false} tick={<IconTick byTime={byTime} />} />
             <XAxis dataKey="t" ticks={hourTicks} interval={0} {...axisProps} tickFormatter={(t: string) => (multiDay && hourOf(t) === 0 ? weekday(t) : String(hourOf(t)))} />
             <YAxis orientation="right" {...yAxisProps} width={40} domain={domain} ticks={ticksFor(domain)} tickFormatter={(v) => `${v}°`} />
@@ -108,19 +112,33 @@ export function HourlyChart({ spec, units }: { spec: ChartOf<'hourly'>; units: U
               dataKey="temp"
               type="monotone"
               stroke={`url(#${id}-stroke)`}
-              strokeWidth={4}
+              strokeWidth={10}
+              fill="none"
+              baseValue={domain[0]}
+              dot={false}
+              activeDot={false}
+              className="line-glow"
+              style={{ filter: `url(#${id}-glow)` }}
+              tooltipType="none"
+              isAnimationActive={false}
+            />
+            <Area
+              dataKey="temp"
+              type="monotone"
+              stroke={`url(#${id}-stroke)`}
+              strokeWidth={3.5}
               strokeLinecap="round"
               fill={`url(#${id}-fill)`}
               fillOpacity={1}
               baseValue={domain[0]}
               dot={false}
-              activeDot={{ r: 5, fill: 'var(--surface)', stroke: 'var(--ink-primary)', strokeWidth: 2.5 }}
+              activeDot={{ r: 5, fill: '#fff', stroke: 'var(--ink-primary)', strokeWidth: 2.5 }}
               isAnimationActive={false}
             />
             {now && <ReferenceLine x={now.t} stroke="var(--ink-muted)" strokeWidth={1} label={{ value: 'Now', position: 'insideTopLeft', fill: 'var(--ink-muted)', fontSize: 11 }} />}
-            <ReferenceDot x={hi.t} y={hi.temp} r={6} fill="var(--surface)" stroke="var(--ink-primary)" strokeWidth={3} label={{ value: 'H', position: 'top', offset: 10, fill: 'var(--ink-secondary)', fontSize: 12, fontWeight: 600 }} />
+            <ReferenceDot x={hi.t} y={hi.temp} r={6} fill="#fff" stroke={temperatureColor(hi.celsius)} strokeWidth={3.5} label={{ value: 'H', position: 'top', offset: 11, fill: 'var(--ink-secondary)', fontSize: 12, fontWeight: 650 }} />
             {lo.t !== hi.t && (
-              <ReferenceDot x={lo.t} y={lo.temp} r={6} fill="var(--surface)" stroke="var(--ink-primary)" strokeWidth={3} label={{ value: 'L', position: 'top', offset: 10, fill: 'var(--ink-secondary)', fontSize: 12, fontWeight: 600 }} />
+              <ReferenceDot x={lo.t} y={lo.temp} r={6} fill="#fff" stroke={temperatureColor(lo.celsius)} strokeWidth={3.5} label={{ value: 'L', position: 'top', offset: 11, fill: 'var(--ink-secondary)', fontSize: 12, fontWeight: 650 }} />
             )}
           </ComposedChart>
         </ResponsiveContainer>
@@ -139,7 +157,7 @@ export function HourlyChart({ spec, units }: { spec: ChartOf<'hourly'>; units: U
                 <YAxis orientation="right" {...yAxisProps} width={40} domain={probability ? [0, 100] : [0, 'auto']} ticks={probability ? [0, 100] : undefined} tickFormatter={(v) => (probability ? `${v}%` : `${v}`)} />
                 {/* Linked to the panel above (syncId): it shows the one tooltip for both; this one only highlights. */}
                 <Tooltip cursor={{ fill: 'var(--surface-muted)' }} content={() => null} />
-                <Bar dataKey="rain" fill={COLORS.blue} maxBarSize={10} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="rain" fill={COLORS.blue} maxBarSize={10} radius={[4, 4, 0, 0]} isAnimationActive={false} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
