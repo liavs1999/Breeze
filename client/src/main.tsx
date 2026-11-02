@@ -1,3 +1,4 @@
+import '@fontsource-variable/inter/opsz.css';
 import '@mantine/core/styles.css';
 import './styles.css';
 

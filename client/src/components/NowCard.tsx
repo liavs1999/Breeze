@@ -2,8 +2,9 @@ import { Group, Stack, Text } from '@mantine/core';
 import { IconDroplet, IconTemperature, IconUmbrella, IconWind } from '@tabler/icons-react';
 import { convert, formatValue, type CurrentWeather } from '@breeze/shared';
 import { useSettings } from '../lib/settings';
-import { skyFor } from '../lib/sky';
+import { skyFor, type Sky } from '../lib/sky';
 import { weatherIcon } from './weatherIcons';
+import { Arriving, Count, useArriving } from '../charts/Count';
 
 /**
  * Current conditions as a sky card: the place, one large light-weight temperature, the condition and
@@ -17,9 +18,17 @@ export function NowCard({ data }: { data: CurrentWeather & { stale?: boolean } }
   const local = new Date(`${data.observedAt}:00Z`).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
   const Icon = weatherIcon(data.weatherCode, data.isDay);
   const hours = data.next24h.slice(0, 12);
+  const arriving = useArriving();
 
   return (
-    <div className="now-card" style={{ background: `linear-gradient(180deg, ${sky.top} 0%, ${sky.bottom} 100%)` }}>
+    <Arriving.Provider value={arriving}>
+    <div
+      className={arriving ? 'now-card alive' : 'now-card'}
+      style={{
+        background: `linear-gradient(180deg, ${sky.zenith} 0%, ${sky.mid} 55%, ${sky.horizon} 100%)`,
+        ['--now-glow' as string]: glowFor(sky),
+      }}
+    >
       <Stack align="center" gap={0}>
         <Text fz={24} fw={500} lh={1.2} ta="center">
           {data.place.name}
@@ -27,9 +36,9 @@ export function NowCard({ data }: { data: CurrentWeather & { stale?: boolean } }
         <Text fz={13} fw={500} opacity={0.85}>
           {[data.place.country, `${local} local time`].filter(Boolean).join(' · ')}
         </Text>
-        <Text fz={84} fw={200} lh={1.05} mt={2} style={{ letterSpacing: '-0.03em', paddingLeft: '0.2em' }}>
-          {t(data.temperature)}
-        </Text>
+        <div className="now-temp" style={{ marginTop: 4 }}>
+          <Count text={t(data.temperature)} duration={1400} />
+        </div>
         <Group gap={6}>
           <Icon size={20} stroke={1.8} aria-hidden />
           <Text fz={18} fw={500}>
@@ -41,7 +50,7 @@ export function NowCard({ data }: { data: CurrentWeather & { stale?: boolean } }
         </Text>
       </Stack>
 
-      <div className="now-panel" style={{ marginTop: 16 }}>
+      <div className="now-panel" style={{ marginTop: 18 }}>
         <Group gap={14} wrap="wrap" style={{ fontSize: 13, fontWeight: 500, opacity: 0.92 }}>
           <Fact icon={IconTemperature} text={`Feels like ${t(data.feelsLike)}`} />
           <Fact icon={IconWind} text={`${formatValue(data.windSpeed, 'wind', units)}, gusts ${formatValue(data.windGusts, 'wind', units)}`} />
@@ -65,7 +74,16 @@ export function NowCard({ data }: { data: CurrentWeather & { stale?: boolean } }
         </div>
       </div>
     </div>
+    </Arriving.Provider>
   );
+}
+
+/** The sun or moon in the card's corner: bright on clear skies, a faint brightness behind clouds, none in rain. */
+function glowFor(sky: Sky): string {
+  if (sky.family === 'rain' || sky.family === 'storm') return 'transparent';
+  const clear = sky.family === 'clear' || sky.family === 'partly';
+  if (!sky.isDay) return clear ? 'rgba(200, 214, 255, 0.28)' : 'rgba(200, 214, 255, 0.08)';
+  return clear ? `color-mix(in srgb, ${sky.glow} 80%, transparent)` : 'rgba(255, 255, 255, 0.16)';
 }
 
 function Fact({ icon: FactIcon, text }: { icon: typeof IconWind; text: string }) {

@@ -45,9 +45,11 @@ export function MessageView({ message, streaming }: { message: ChatMessage; stre
     }
   });
   flush('end');
+  // Nothing to show yet (the answer has just started): no empty sheet; "Thinking…" shows instead.
+  if (!blocks.length) return null;
 
   return (
-    <Box className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <Box className="card turn fade-in">
       {blocks}
       {!streaming && <AnswerFooter message={message} />}
     </Box>

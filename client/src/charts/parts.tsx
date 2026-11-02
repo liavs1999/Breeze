@@ -2,17 +2,18 @@ import type { ReactNode } from 'react';
 import { Group, Text } from '@mantine/core';
 import type { Icon } from '@tabler/icons-react';
 import { weatherIcon } from '../components/weatherIcons';
+import { Count } from './Count';
 
 /** The large summary above a chart: one to four big values, an optional icon, a caption on the right. */
 export function Hero({ values, icon: HeroIcon, caption }: { values: { text: string; dim?: boolean }[]; icon?: Icon; caption?: ReactNode }) {
   return (
-    <Group gap={10} align="center" mb={4} wrap="nowrap">
+    <Group gap={12} align="center" mb={6} wrap="nowrap">
       {values.map((v) => (
-        <Text key={v.text} fz={34} fw={v.dim ? 500 : 600} lh={1} c={v.dim ? 'dimmed' : undefined} style={{ letterSpacing: '-0.02em' }}>
-          {v.text}
-        </Text>
+        <span key={v.text} className="hero-value" data-dim={v.dim ? 'true' : undefined}>
+          <Count text={v.text} />
+        </span>
       ))}
-      {HeroIcon && <HeroIcon size={30} stroke={1.5} color="var(--ink-secondary)" aria-hidden />}
+      {HeroIcon && <HeroIcon size={30} stroke={1.4} color="var(--ink-secondary)" aria-hidden />}
       {caption && (
         <Text size="xs" c="dimmed" ml="auto" ta="right" lh={1.35}>
           {caption}

@@ -35,11 +35,11 @@ export function Composer({ chatId, busy, onSend, onStop }: { chatId: string; bus
   };
 
   return (
-    <div style={{ position: 'sticky', bottom: 0, paddingBottom: 'max(12px, env(safe-area-inset-bottom))', background: 'linear-gradient(to top, var(--mantine-color-body) 55%, transparent)', paddingTop: 18 }}>
+    <div className="composer-dock">
       <div className="column">
         <div className="composer" data-busy={busy}>
-        <Paper className="card" p={6} pl={16} style={{ borderRadius: 28 }}>
-          <Group gap={4} align="flex-end" wrap="nowrap">
+        <Paper className="card" p={7} pl={15} style={{ borderRadius: 30 }}>
+          <Group gap={2} align="flex-end" wrap="nowrap">
             <Textarea
               ref={ref}
               value={text}
@@ -56,14 +56,14 @@ export function Composer({ chatId, busy, onSend, onStop }: { chatId: string; bus
               maxRows={6}
               variant="unstyled"
               style={{ flex: 1 }}
-              styles={{ input: { fontSize: 16, paddingTop: 7, paddingBottom: 7 } }}
+              styles={{ input: { fontSize: 16, letterSpacing: '-0.012em', paddingTop: 7, paddingBottom: 7 } }}
               aria-label="Message"
               maxLength={2000}
             />
             {dictationSupported && (
               <Tooltip label={dictation.listening ? 'Stop dictating' : 'Speak your question'}>
                 <ActionIcon
-                  size={36}
+                  size={34}
                   radius="xl"
                   variant={dictation.listening ? 'light' : 'subtle'}
                   color={dictation.listening ? 'red' : 'gray'}
@@ -79,23 +79,23 @@ export function Composer({ chatId, busy, onSend, onStop }: { chatId: string; bus
             )}
             {busy ? (
               <Tooltip label="Stop">
-                <ActionIcon size={36} radius="xl" variant="filled" className="radar-stop" onClick={onStop} aria-label="Stop the answer">
+                <ActionIcon size={34} radius="xl" variant="filled" className="radar-stop" onClick={onStop} aria-label="Stop the answer">
                   <IconPlayerStopFilled size={14} />
                 </ActionIcon>
               </Tooltip>
             ) : (
-              <ActionIcon size={36} radius="xl" variant="filled" onClick={submit} disabled={!text.trim()} aria-label="Send">
+              <ActionIcon size={34} radius="xl" variant="filled" className="send-button" onClick={submit} disabled={!text.trim()} aria-label="Send">
                 <IconArrowUp size={18} stroke={2.2} />
               </ActionIcon>
             )}
           </Group>
         </Paper>
         </div>
-        <Text size="xs" c="dimmed" ta="center" mt={6} role="status" aria-live="polite">
+        <Text size="xs" className="footnote" ta="center" mt={8} role="status" aria-live="polite">
           {notice ?? (
             <>
               Weather data by{' '}
-              <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>
+              <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">
                 Open-Meteo
               </a>{' '}
               (CC BY 4.0). Answers can be wrong; check official warnings for safety decisions.

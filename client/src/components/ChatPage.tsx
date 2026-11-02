@@ -11,7 +11,8 @@ import { checkSavedKey, markKeyProblem } from '../lib/status';
 import type { ChatMessage } from '../lib/types';
 import { read, write } from '../lib/storage';
 import { setCurrentChatEmpty } from '../lib/currentChat';
-import { skyFromMessages } from '../lib/sky';
+import { setSkyHome, skyFromMessages } from '../lib/sky';
+import { useOrbitDirector } from '../lib/useOrbitDirector';
 import { Composer } from './Composer';
 import { EmptyState } from './EmptyState';
 import { MessageView } from './MessageView';
@@ -33,7 +34,7 @@ export function ChatPage({ chatId, onOpenKeyPanel }: { chatId: string; onOpenKey
   if (failed) {
     return (
       <main className="column" style={{ flex: 1, paddingTop: 48 }}>
-        <Alert color="red" variant="light" icon={<IconAlertTriangle size={18} />} title="Cannot reach the server">
+        <Alert className="glass" color="red" variant="light" icon={<IconAlertTriangle size={18} />} title="Cannot reach the server">
           <Group justify="space-between">
             <Text size="sm">The chat could not be loaded.</Text>
             <Button size="xs" variant="light" color="red" leftSection={<IconRefresh size={14} />} onClick={load}>
@@ -91,9 +92,14 @@ function Conversation({ chatId, initial, onOpenKeyPanel }: { chatId: string; ini
   const busy = status === 'submitted' || status === 'streaming';
   const isEmpty = messages.length === 0 && !busy;
   useEffect(() => skyFromMessages(messages), [messages]);
+  useOrbitDirector(messages, busy, isEmpty);
   useEffect(() => {
     setCurrentChatEmpty(isEmpty);
-    return () => setCurrentChatEmpty(false);
+    setSkyHome(isEmpty);
+    return () => {
+      setCurrentChatEmpty(false);
+      setSkyHome(false);
+    };
   }, [isEmpty]);
   const chatError = error ? parseChatError(error) : null;
   const reconnecting = useReconnect({ chatId, failed: chatError?.code === 'network', resumeStream, setMessages, clearError });
@@ -178,9 +184,9 @@ function SharedChatBar({ chatId }: { chatId: string }) {
       .catch(() => setState('failed'));
   };
   return (
-    <div style={{ position: 'sticky', bottom: 0, paddingBottom: 'max(12px, env(safe-area-inset-bottom))', paddingTop: 18, background: 'linear-gradient(to top, var(--mantine-color-body) 55%, transparent)' }}>
+    <div className="composer-dock">
       <div className="column">
-        <Group className="card" justify="space-between" gap="sm" p={10} pl={18} style={{ borderRadius: 28 }}>
+        <Group className="card" justify="space-between" gap="sm" p={10} pl={18} style={{ borderRadius: 30 }}>
           <Text size="sm" c="dimmed">
             {state === 'failed' ? 'The copy could not be made. Try again.' : 'A chat shared with you. It is read-only.'}
           </Text>
@@ -253,11 +259,15 @@ function useReconnect({
  * chart that appears at once does not break it.
  */
 function useScrollMemory(chatId: string, count: number) {
-  const follow = useRef(true);
+  const initialCount = useRef(count);
+  // An empty chat does not follow its own growth (fonts, the welcome appearing): it stays at the top.
+  const follow = useRef(count > 0);
 
   useEffect(() => {
     const saved = Number(read(`breeze:scroll:${chatId}`, 'session'));
-    requestAnimationFrame(() => window.scrollTo({ top: Number.isFinite(saved) && saved > 0 ? saved : document.documentElement.scrollHeight }));
+    // An empty chat opens at its top, on the welcome; a conversation at its saved place or its end.
+    const fallback = initialCount.current === 0 ? 0 : document.documentElement.scrollHeight;
+    requestAnimationFrame(() => window.scrollTo({ top: Number.isFinite(saved) && saved > 0 ? saved : fallback }));
     const onScroll = () => {
       follow.current = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 80;
       write(`breeze:scroll:${chatId}`, String(Math.round(window.scrollY)), 'session');
@@ -278,7 +288,6 @@ function useScrollMemory(chatId: string, count: number) {
 
   // A new message (the user just sent one) brings the bottom into view; not on first load, where
   // the saved position wins.
-  const initialCount = useRef(count);
   useEffect(() => {
     if (count === initialCount.current) return;
     follow.current = true;
@@ -288,8 +297,8 @@ function useScrollMemory(chatId: string, count: number) {
 
 function Banner({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div style={{ background: 'var(--mantine-color-yellow-light)', borderBottom: '1px solid var(--hairline)' }}>
-      <Group className="column" gap={8} py={6} wrap="nowrap">
+    <div className="column" style={{ paddingTop: 10 }}>
+      <Group className="glass fade-in" gap={8} py={8} px={14} wrap="nowrap" style={{ borderRadius: 18 }}>
         {icon}
         <Text size="sm">{children}</Text>
       </Group>
@@ -305,15 +314,17 @@ function hasVisibleContent(m: ChatMessage | undefined) {
 
 function Thinking() {
   return (
-    <Text size="sm" fw={500} className="fade-in shimmer">
-      Thinking…
-    </Text>
+    <div className="glass thinking fade-in">
+      <Text size="sm" fw={500} className="shimmer">
+        Thinking…
+      </Text>
+    </div>
   );
 }
 
 function Reconnecting() {
   return (
-    <Group gap={8} c="dimmed" className="fade-in">
+    <Group gap={8} c="dimmed" className="glass thinking fade-in">
       <Loader size={14} />
       <Text size="sm">Reconnecting to the answer…</Text>
     </Group>
@@ -323,7 +334,7 @@ function Reconnecting() {
 function ErrorNotice({ code, message, onRetry, onOpenKeyPanel }: { code: string; message: string; onRetry: () => void; onOpenKeyPanel: () => void }) {
   const keyIssue = KEY_ERRORS.has(code);
   return (
-    <Alert variant="light" color={code === 'rate_limited' ? 'yellow' : 'red'} icon={<IconAlertTriangle size={18} />} className="fade-in">
+    <Alert variant="light" color={code === 'rate_limited' ? 'yellow' : 'red'} icon={<IconAlertTriangle size={18} />} className="glass fade-in">
       <Group justify="space-between" gap="xs">
         <Text size="sm" style={{ flex: 1, minWidth: 200 }}>
           {message}
